@@ -11,6 +11,7 @@ POST /v1/score-events
 The flow demonstrates:
 
 - authentication;
+- authorization;
 - request validation;
 - action verification;
 - server-side point calculation;
@@ -37,6 +38,8 @@ sequenceDiagram
 
     API->>IDP: Validate access token
     IDP-->>API: Authenticated user identity
+
+    API->>API: Authorize authenticated user
 
     API->>API: Validate request schema
 
@@ -110,7 +113,35 @@ The client does not provide the authoritative `userId` in the request body.
 
 ---
 
-### 3.2 Request Validation
+### 3.2 Authorization
+
+Authentication establishes who the user is.
+
+Authorization determines whether the authenticated user is allowed to perform the requested score-producing action.
+
+The authorization context considers:
+
+```text
+authenticated user
++
+requested action
++
+referenced resource
+```
+
+The Score API must ensure that:
+
+```text
+authenticated user
+        =
+user receiving the reward
+```
+
+A client must not be able to submit a score event for another user by providing another user's identifier.
+
+---
+
+### 3.3 Request Validation
 
 The API validates the request against the OpenAPI contract.
 
@@ -133,11 +164,11 @@ totalScore
 
 These values are determined or derived by the server.
 
-Authentication and request validation failures occur before the idempotency transaction is started and therefore do not create idempotency records.
+Authentication, authorization, and request validation failures occur before the score mutation and therefore do not create a score event.
 
 ---
 
-### 3.3 Idempotency Key Claim
+### 3.4 Idempotency Key Claim
 
 The authenticated user's identity and the supplied idempotency key form the uniqueness scope:
 
@@ -157,7 +188,7 @@ If the insert conflicts with an existing record, the service inspects the existi
 
 ---
 
-### 3.4 Existing Idempotency Record
+### 3.5 Existing Idempotency Record
 
 The service handles existing records according to their state.
 
@@ -181,7 +212,7 @@ The API returns:
 409 IDEMPOTENCY_REQUEST_IN_PROGRESS
 ```
 
-No score event is created.
+No score event is created by the second request.
 
 #### `FAILED`
 
@@ -445,6 +476,17 @@ Invalid or expired token
 ```
 
 No idempotency record is created.
+
+### Authorization failure
+
+```text
+Authenticated user is not authorized
+for the requested action/resource
+        ↓
+403 Forbidden
+```
+
+No score event is created.
 
 ### Validation failure
 

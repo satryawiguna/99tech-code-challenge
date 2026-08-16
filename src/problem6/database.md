@@ -225,7 +225,7 @@ The event records the points that were actually awarded at the time the event wa
 
 Historical score events should not be silently modified when the current scoring configuration changes.
 
-If an administrative correction is required, a separate compensating event should be preferred over mutating historical events.
+If an administrative correction is required, the system should use a dedicated correction workflow or compensating mechanism rather than mutating the original historical event.
 
 ---
 
@@ -737,7 +737,7 @@ The trade-off is intentional because safely handling retries is important for a 
 
 ## 20. Summary
 
-The persistence model separates three important concerns:
+The persistence model separates four important concerns:
 
 1. `score_events` provides the immutable audit history.
 2. `user_scores` provides an efficient aggregate for leaderboard reads.
