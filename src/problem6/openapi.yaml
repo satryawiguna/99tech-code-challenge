@@ -1,0 +1,499 @@
+openapi: 3.1.0
+
+info:
+  title: Scoreboard API
+  version: 1.0.0
+  summary: Secure scoreboard and score-event API
+  description: |
+    API specification for a secure scoreboard service.
+
+    The Score API is responsible for:
+    - exposing the leaderboard;
+    - accepting verified score-producing actions;
+    - calculating points server-side;
+    - preventing duplicate score rewards;
+    - persisting score events and aggregate scores.
+
+    Authentication and user identity are provided by an external
+    Identity Provider.
+
+    Action eligibility and verification are owned by the relevant
+    domain/action service or internal domain module.
+
+    User management, authentication endpoints, and administrative
+    action-definition management are outside the scope of this API.
+
+servers:
+  - url: https://api.scoreboard.invalid
+    description: Production API placeholder
+
+tags:
+  - name: Leaderboard
+    description: Read-only leaderboard operations.
+
+  - name: Score Events
+    description: Operations for recording verified score-producing actions.
+
+paths:
+  /v1/leaderboard:
+    get:
+      tags:
+        - Leaderboard
+
+      summary: Get the top users by score
+
+      description: |
+        Returns users ordered by their current aggregate score.
+
+        Results are ordered by score descending. When two or more
+        users have the same score, user ID is used as a deterministic
+        secondary sort key in ascending order.
+
+        The endpoint is intentionally limited to the top 10 users.
+
+        User identity information returned by this endpoint is sourced
+        from the Score Service's user profile projection or an
+        equivalent read-optimized representation.
+
+      operationId: getLeaderboard
+
+      security: []
+
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: |
+            Number of leaderboard entries to return.
+            The API does not allow more than 10 entries.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 10
+
+      responses:
+        "200":
+          description: Top users ordered by score descending.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaderboardResponse"
+
+              example:
+                data:
+                  - rank: 1
+                    userId: user-123
+                    displayName: User One
+                    score: 950
+                  - rank: 2
+                    userId: user-456
+                    displayName: User Two
+                    score: 920
+
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/score-events:
+    post:
+      tags:
+        - Score Events
+
+      summary: Record a verified score-producing action
+
+      description: |
+        Records a score-producing action for the authenticated user.
+
+        The client does not provide the user ID or the number of points
+        to award.
+
+        The authenticated user identity is derived from the access token.
+
+        The actionType must correspond to an active server-side action
+        definition. The server resolves the applicable scoring rule and
+        determines the number of points to award.
+
+        The server verifies that the referenced action is valid and
+        eligible for the authenticated user before awarding points.
+
+        The combination of authenticated user ID, action type, and
+        reference ID identifies the business action being rewarded.
+
+        The server must ensure that the same business action cannot
+        generate multiple score rewards.
+
+        Idempotency-Key protects the API operation from duplicate
+        requests caused by retries. Business-level uniqueness is
+        enforced independently by the persistence layer.
+
+      operationId: createScoreEvent
+
+      security:
+        - bearerAuth: []
+
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScoreEventRequest"
+
+            example:
+              actionType: ACTION_COMPLETED
+              referenceId: action-123
+
+      responses:
+        "201":
+          description: |
+            Score event successfully recorded for the first time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreEventResponse"
+
+              example:
+                data:
+                  eventId: evt-123
+                  pointsAwarded: 10
+                  totalScore: 150
+
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+        "404":
+          $ref: "#/components/responses/ResourceNotFound"
+
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+        "422":
+          $ref: "#/components/responses/ActionNotEligible"
+
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+      description: |
+        Access token issued by the external Identity Provider.
+
+        The Score API validates the token and derives the authenticated
+        user's identity from its claims.
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+
+      description: |
+        Unique identifier for the client request.
+
+        If the same idempotency key is received with the same request
+        payload, the server must return the original result without
+        creating another score event.
+
+        If the same idempotency key is reused with a different request
+        payload, the server must reject the request with
+        IDEMPOTENCY_KEY_REUSED.
+
+        Business-level uniqueness must still be enforced by the
+        persistence layer using the authenticated user ID, action type,
+        and reference ID.
+
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+
+  schemas:
+    CreateScoreEventRequest:
+      type: object
+      additionalProperties: false
+
+      required:
+        - actionType
+        - referenceId
+
+      properties:
+        actionType:
+          type: string
+
+          description: |
+            Identifier of the domain action that may produce a score.
+
+            The value must correspond to an active server-side action
+            definition.
+
+            The action definition and its scoring rule are controlled
+            server-side. The client cannot specify the number of points
+            to award.
+
+          minLength: 1
+          maxLength: 100
+          example: ACTION_COMPLETED
+
+        referenceId:
+          type: string
+
+          description: |
+            Identifier of the domain resource or action instance
+            being submitted for scoring.
+
+            Together with the authenticated user ID and action type,
+            this identifies the business action being rewarded.
+
+          minLength: 1
+          maxLength: 255
+          example: action-123
+
+    ScoreEvent:
+      type: object
+      additionalProperties: false
+
+      required:
+        - eventId
+        - pointsAwarded
+        - totalScore
+
+      properties:
+        eventId:
+          type: string
+          description: Unique identifier of the generated score event.
+          example: evt-123
+
+        pointsAwarded:
+          type: integer
+          minimum: 0
+          description: |
+            Number of points calculated and awarded by the server.
+          example: 10
+
+        totalScore:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            User's aggregate score after the successful score event.
+          example: 150
+
+    ScoreEventResponse:
+      type: object
+      additionalProperties: false
+
+      required:
+        - data
+
+      properties:
+        data:
+          $ref: "#/components/schemas/ScoreEvent"
+
+    LeaderboardEntry:
+      type: object
+      additionalProperties: false
+
+      required:
+        - rank
+        - userId
+        - displayName
+        - score
+
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+          example: 1
+
+        userId:
+          type: string
+          example: user-123
+
+        displayName:
+          type: string
+          example: User One
+
+        score:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 950
+
+    LeaderboardResponse:
+      type: object
+      additionalProperties: false
+
+      required:
+        - data
+
+      properties:
+        data:
+          type: array
+          maxItems: 10
+
+          items:
+            $ref: "#/components/schemas/LeaderboardEntry"
+
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+
+      required:
+        - error
+
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+
+          required:
+            - code
+            - message
+
+          properties:
+            code:
+              type: string
+              example: INVALID_REQUEST
+
+            message:
+              type: string
+              example: The request is invalid.
+
+  responses:
+    InvalidRequest:
+      description: |
+        The request is syntactically invalid or contains invalid
+        parameters.
+
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    Unauthorized:
+      description: |
+        Authentication is missing, invalid, or expired.
+
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    Forbidden:
+      description: |
+        The authenticated user is not authorized to perform the action.
+
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    ResourceNotFound:
+      description: |
+        The referenced domain resource or action could not be found.
+
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    Conflict:
+      description: |
+        The request conflicts with an existing state.
+
+        This response is used for:
+        - an action that has already been rewarded;
+        - reuse of an idempotency key with a different request payload;
+        - an idempotency request that is currently being processed.
+
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+          examples:
+            actionAlreadyRewarded:
+              summary: Action has already been rewarded
+              value:
+                error:
+                  code: ACTION_ALREADY_REWARDED
+                  message: This action has already been rewarded.
+
+            idempotencyKeyReused:
+              summary: Idempotency key was reused
+              value:
+                error:
+                  code: IDEMPOTENCY_KEY_REUSED
+                  message: The idempotency key was previously used with a different request.
+
+            idempotencyRequestInProgress:
+              summary: Idempotent request is already being processed
+              value:
+                error:
+                  code: IDEMPOTENCY_REQUEST_IN_PROGRESS
+                  message: A request with this idempotency key is already being processed.
+
+    ActionNotEligible:
+      description: |
+        The referenced action exists but does not satisfy the business
+        rules required to receive a score reward.
+
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+          example:
+            error:
+              code: ACTION_NOT_ELIGIBLE
+              message: The action is not eligible for a score reward.
+
+    RateLimitExceeded:
+      description: |
+        The client has exceeded the permitted request rate.
+
+      headers:
+        Retry-After:
+          description: |
+            Number of seconds before the client should retry.
+          schema:
+            type: integer
+            minimum: 1
+
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+          example:
+            error:
+              code: RATE_LIMIT_EXCEEDED
+              message: Too many requests.
+
+    InternalError:
+      description: |
+        An unexpected server-side error occurred.
+
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
