@@ -62,3 +62,9 @@ test("all implementations reject Infinity", () => {
     assert.throws(() => implementation(Number.POSITIVE_INFINITY));
   }
 });
+
+test("all implementations reject unsafe integers", () => {
+  for (const [, implementation] of implementations) {
+    assert.throws(() => implementation(Number.MAX_SAFE_INTEGER + 1));
+  }
+});
