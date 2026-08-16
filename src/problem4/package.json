@@ -1,0 +1,14 @@
+{
+  "name": "problem4",
+  "version": "1.0.0",
+  "private": true,
+  "description": "99Tech Code Challenge - Problem 4",
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test dist/index.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
+  }
+}
