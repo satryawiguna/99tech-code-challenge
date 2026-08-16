@@ -40,7 +40,8 @@ The Score Service owns:
 - action definitions used for scoring;
 - score events;
 - aggregate user scores;
-- the leaderboard read model.
+- the leaderboard read model;
+- idempotency state required to safely process retries.
 
 ---
 
@@ -71,10 +72,10 @@ The Score Service uses four core domain data sets and one request-processing dat
 │ action_definition_id     │
 │ reference_id             │
 │ points                   │
-│ created_at                │
+│ created_at               │
 └────────────┬─────────────┘
              │
-             │ user_id
+             │ N:1
              ▼
 ┌──────────────────────────┐
 │       user_scores        │
@@ -99,15 +100,17 @@ The Score Service uses four core domain data sets and one request-processing dat
 │ user_id                  │
 │ idempotency_key          │
 │ request_hash             │
+│ status                   │
 │ response_status          │
 │ response_body            │
 │ created_at               │
 │ expires_at               │
 └──────────────────────────┘
-
 ```
 
 `user_profiles` is a read-oriented projection and is not the authoritative user database.
+
+`idempotency_records` is a request-processing data set rather than a score domain entity. Its lifecycle is independent from the immutable `score_events` ledger.
 
 ---
 
@@ -149,8 +152,7 @@ The client never controls the `points` value.
 
 ### Lifecycle
 
-Action definitions that have been referenced by score events must not
-be physically deleted.
+Action definitions that have been referenced by score events must not be physically deleted.
 
 Instead, they should be deactivated by setting:
 
@@ -158,11 +160,9 @@ Instead, they should be deactivated by setting:
 is_active = false
 ```
 
-This preserves the historical relationship between score events and
-the action definition that produced them.
+This preserves the historical relationship between score events and the action definition that produced them.
 
-A new definition should receive a new immutable `id` if the business
-meaning of an existing action changes significantly.
+A new definition should receive a new immutable `id` if the business meaning of an existing action changes significantly.
 
 ---
 
@@ -269,8 +269,7 @@ The projection exists to avoid requiring a synchronous user-service request for 
 
 ## 9. Idempotency Records
 
-The Score Service maintains idempotency state to safely handle client
-retries.
+The Score Service maintains idempotency state to safely handle client retries and prevent the same idempotent request from being processed more than once.
 
 ### Columns
 
@@ -280,10 +279,21 @@ retries.
 | `user_id`         | UUID / identifier | NOT NULL    | Authenticated user identifier              |
 | `idempotency_key` | VARCHAR(128)      | NOT NULL    | Client-provided idempotency key            |
 | `request_hash`    | VARCHAR(128)      | NOT NULL    | Hash of the normalized request payload     |
-| `response_status` | INTEGER           | NOT NULL    | HTTP status of the original response       |
-| `response_body`   | JSON / JSONB      | NOT NULL    | Original response payload                  |
+| `status`          | VARCHAR(20)       | NOT NULL    | Current idempotency processing state       |
+| `response_status` | INTEGER           | NULL        | HTTP status of the original response       |
+| `response_body`   | JSON / JSONB      | NULL        | Original response payload                  |
 | `created_at`      | TIMESTAMP         | NOT NULL    | Record creation timestamp                  |
 | `expires_at`      | TIMESTAMP         | NOT NULL    | Expiration timestamp for idempotency state |
+
+### Status
+
+The idempotency record uses the following states:
+
+| Status       | Description                                                                      |
+| ------------ | -------------------------------------------------------------------------------- |
+| `PROCESSING` | The request has claimed the idempotency key and is currently being processed     |
+| `COMPLETED`  | The request has completed successfully and the original response has been stored |
+| `FAILED`     | The request has completed with a replayable application-level failure response   |
 
 ### Constraints
 
@@ -291,21 +301,65 @@ retries.
 UNIQUE(user_id, idempotency_key)
 ```
 
-The `request_hash` is used to detect reuse of an idempotency key with a
-different request payload.
+The `request_hash` is used to detect reuse of an idempotency key with a different request payload.
 
-If the same user sends the same idempotency key with the same request,
-the original response is returned.
+For a new request, the service attempts to create an idempotency record with:
 
-If the same user reuses the idempotency key with a different request,
-the API returns:
+```text
+status = PROCESSING
+```
+
+The creation is performed atomically using the database uniqueness constraint.
+
+If the record is successfully created, the request owns the idempotency key and may continue processing.
+
+If the same user sends the same idempotency key again:
+
+- `COMPLETED` → return the stored original response;
+- `PROCESSING` → return `409 IDEMPOTENCY_REQUEST_IN_PROGRESS`;
+- `FAILED` → return the stored replayable failure response.
+
+If the same user reuses an idempotency key with a different request payload, as determined by `request_hash`, the API returns:
 
 ```text
 409 IDEMPOTENCY_KEY_REUSED
 ```
 
-Idempotency records may be expired and removed after the configured
-retention period.
+### Response Fields
+
+`response_status` and `response_body` are nullable while the request is in the `PROCESSING` state.
+
+Example:
+
+```text
+PROCESSING
+response_status = NULL
+response_body   = NULL
+```
+
+After successful processing:
+
+```text
+COMPLETED
+response_status = 201
+response_body   = <original response>
+```
+
+After a replayable application-level failure:
+
+```text
+FAILED
+response_status = <original error status>
+response_body   = <original error response>
+```
+
+Authentication and request-validation failures occur before an idempotency record is created and therefore are not persisted as idempotency results.
+
+### Expiration
+
+Idempotency records may be expired and removed after the configured retention period.
+
+Records in `PROCESSING` state must not normally expire because the idempotency record and score mutation are handled within the same transaction boundary. An unexpected database or system failure rolls the transaction back.
 
 ---
 
@@ -409,41 +463,51 @@ The exact index syntax depends on the selected database engine.
 
 ## 12. Score Update Transaction
 
-A successful score-producing request must update the score ledger and aggregate score atomically.
+A new score-producing request must persist the idempotency record, score event, and aggregate score atomically within the same database transaction.
+
+The idempotency key is protected by:
+
+```text
+UNIQUE(user_id, idempotency_key)
+```
 
 Conceptually:
 
 ```text
 BEGIN TRANSACTION
 
-    1. Insert score event
+    Create idempotency record
+    status = PROCESSING
 
-    2. Update aggregate user score
+    Insert score event
+
+    Update aggregate user score
+
+    Update idempotency record
+    status = COMPLETED
+    response_status = 201
+    response_body = <original response>
 
 COMMIT
 ```
 
-If either operation fails:
+If an expected application-level failure occurs after the idempotency record has been created, the transaction may persist the idempotency record as:
+
+```text
+FAILED
+```
+
+along with the replayable error response.
+
+If an unexpected infrastructure or database failure occurs:
 
 ```text
 ROLLBACK
 ```
 
-Both changes must be persisted together.
+The idempotency record, score event, and aggregate score update are rolled back together.
 
-This prevents states such as:
-
-```text
-score_events = +10
-user_scores  = unchanged
-```
-
-or:
-
-```text
-user_scores  = +10
-score_events = missing
-```
+If the idempotency record already exists for the same `(user_id, idempotency_key)`, the service must inspect the existing record and compare its `request_hash`.
 
 ---
 
@@ -459,9 +523,33 @@ The API requires:
 Idempotency-Key
 ```
 
-The same key with the same request should return the original result without creating another score event.
+The service atomically claims the key using:
 
-The same key with a different request payload must be rejected.
+```text
+UNIQUE(user_id, idempotency_key)
+```
+
+The idempotency record tracks the processing lifecycle:
+
+```text
+PROCESSING
+    ↓
+COMPLETED
+```
+
+or:
+
+```text
+PROCESSING
+    ↓
+FAILED
+```
+
+The same key with the same request is replayed according to the stored idempotency response.
+
+The same key with a different request payload is rejected.
+
+A request that encounters an existing `PROCESSING` record must not create another score event.
 
 ### Layer 2 — Business Uniqueness
 
@@ -487,17 +575,17 @@ Together these controls provide defense in depth.
 
 ## 14. Concurrent Request Scenario
 
-Consider two requests arriving simultaneously:
+Consider two requests arriving simultaneously for the same business action:
 
 ```text
 Request A ─────────────┐
-                       ├── ACTION_COMPLETED / action-123
+                       ├── user-123 / ACTION_COMPLETED / action-123
 Request B ─────────────┘
 ```
 
-Both requests may initially determine that the action appears eligible.
+Both requests may attempt to claim separate idempotency keys and process the same business action.
 
-The database uniqueness constraint is the final protection.
+The business uniqueness constraint is the final protection.
 
 Only one transaction can successfully create:
 
@@ -505,9 +593,9 @@ Only one transaction can successfully create:
 (user_id, action_definition_id, reference_id)
 ```
 
-The competing transaction must treat the uniqueness conflict as an already-rewarded action.
+The competing transaction receives a uniqueness conflict and must not award additional points.
 
-The API should return:
+The API returns:
 
 ```text
 409 ACTION_ALREADY_REWARDED
@@ -552,7 +640,9 @@ The important properties are:
 
 The `score_events` ledger and `user_scores` aggregate are maintained within the same transaction.
 
-Therefore the Score Service provides strong consistency between the event and aggregate within the transaction boundary.
+The idempotency record that belongs to the successful request is committed as part of the same transaction.
+
+Therefore the Score Service provides strong consistency between the idempotency state, score event, and aggregate score within the transaction boundary.
 
 The `user_profiles` projection may be eventually consistent with the authoritative Identity/User domain.
 
@@ -637,6 +727,12 @@ The unique business constraint adds an index and therefore some write overhead.
 
 This is intentional because duplicate reward prevention is a correctness requirement, not merely an optimization.
 
+### Idempotency State
+
+Persisting idempotency state introduces additional storage and transaction work.
+
+The trade-off is intentional because safely handling retries is important for a score-mutating API. The stored request hash also allows the service to reject reuse of an idempotency key for a different request.
+
 ---
 
 ## 20. Summary
@@ -646,6 +742,7 @@ The persistence model separates three important concerns:
 1. `score_events` provides the immutable audit history.
 2. `user_scores` provides an efficient aggregate for leaderboard reads.
 3. `action_definitions` controls scoring rules on the server side.
+4. `idempotency_records` protects score mutations from duplicate client retries.
 
 Duplicate rewards are prevented through multiple layers:
 
