@@ -43,52 +43,69 @@ sequenceDiagram
 
     API->>API: Validate request schema
 
-    API->>DB: BEGIN TRANSACTION
+    API->>DB: Look up idempotency record<br/>(user_id, idempotency_key)
 
-    API->>DB: Attempt to create idempotency record<br/>status = PROCESSING
+    alt Existing COMPLETED record
+        DB-->>API: Stored response
+        API-->>Client: Return original response
 
-    alt New idempotency key
+    else Existing PROCESSING record
+        DB-->>API: Existing record
+        API-->>Client: 409 IDEMPOTENCY_REQUEST_IN_PROGRESS
 
-        DB-->>API: Idempotency record created
+    else Existing key with different request
+        DB-->>API: Request hash mismatch
+        API-->>Client: 409 IDEMPOTENCY_KEY_REUSED
+
+    else Existing FAILED record
+        DB-->>API: Stored failure response
+        API-->>Client: Return stored failure response
+
+    else No existing record
+
+        DB-->>API: No idempotency record found
 
         API->>DB: Resolve action definition
         DB-->>API: Action definition + points
 
         API->>Action: Verify action eligibility<br/>user + referenceId + actionType
-        Action-->>API: Action verified
+        Action-->>API: Eligibility result
 
-        API->>DB: Insert score event
-        DB-->>API: Score event created
+        alt Action not eligible
+            API-->>Client: 4xx domain-specific response<br/>(not persisted; safe to retry)
 
-        API->>DB: Update user aggregate score
-        DB-->>API: Aggregate updated
+        else Action verified
 
-        API->>DB: Mark idempotency record COMPLETED<br/>Store original response
-        DB-->>API: Idempotency record completed
+            API->>DB: BEGIN TRANSACTION
 
-        API->>DB: COMMIT
+            API->>DB: Atomically claim idempotency key<br/>status = PROCESSING
 
-        API-->>Client: 201 Created
+            alt Claim conflicts with concurrent request
+                API->>DB: ROLLBACK
+                API-->>Client: 409 IDEMPOTENCY_REQUEST_IN_PROGRESS
 
-    else Existing idempotency key
+            else Claim succeeded
+                API->>DB: Insert score event
 
-        DB-->>API: Existing idempotency record
+                alt Business uniqueness conflict
+                    DB-->>API: UNIQUE constraint violation
+                    API->>DB: Mark idempotency record FAILED<br/>response_status = 409
+                    API->>DB: COMMIT
+                    API-->>Client: 409 ACTION_ALREADY_REWARDED
 
-        alt Existing COMPLETED record
-            API->>DB: ROLLBACK
-            API-->>Client: Return original response
+                else Score event created
+                    DB-->>API: Score event created
 
-        else Existing PROCESSING record
-            API->>DB: ROLLBACK
-            API-->>Client: 409 IDEMPOTENCY_REQUEST_IN_PROGRESS
+                    API->>DB: Update user aggregate score
+                    DB-->>API: Aggregate updated
 
-        else Existing key with different request
-            API->>DB: ROLLBACK
-            API-->>Client: 409 IDEMPOTENCY_KEY_REUSED
+                    API->>DB: Mark idempotency record COMPLETED<br/>Store original response
+                    DB-->>API: Idempotency record completed
 
-        else Existing FAILED record
-            API->>DB: ROLLBACK
-            API-->>Client: Return stored failure response
+                    API->>DB: COMMIT
+                    API-->>Client: 201 Created
+                end
+            end
         end
     end
 ```
@@ -168,7 +185,7 @@ Authentication, authorization, and request validation failures occur before the 
 
 ---
 
-### 3.4 Idempotency Key Claim
+### 3.4 Idempotency Pre-check
 
 The authenticated user's identity and the supplied idempotency key form the uniqueness scope:
 
@@ -176,15 +193,11 @@ The authenticated user's identity and the supplied idempotency key form the uniq
 UNIQUE(user_id, idempotency_key)
 ```
 
-The service begins the database transaction and attempts to create:
+Before any database transaction is opened, the service performs a read-only lookup for an existing idempotency record matching this scope.
 
-```text
-status = PROCESSING
-```
+This lookup allows a replayed request to short-circuit immediately with the stored outcome, without resolving the action, calling the Action/Domain Service, or opening a transaction.
 
-If the insert succeeds, the current request owns the idempotency key.
-
-If the insert conflicts with an existing record, the service inspects the existing record and its `request_hash`.
+If no record exists, the request proceeds to action resolution and eligibility verification. The idempotency key itself is not claimed at this point — it is claimed atomically inside the database transaction only after the action has been verified (see Section 6).
 
 ---
 
@@ -234,7 +247,9 @@ The request is rejected.
 
 ## 4. Action Resolution
 
-For a new idempotency key, the API resolves:
+Action resolution happens after the idempotency pre-check and before any database transaction is opened. No transaction is held open while the API waits on this step.
+
+For a request with no existing idempotency record, the API resolves:
 
 ```text
 actionType
@@ -264,6 +279,8 @@ The client cannot override the configured points.
 
 The Score API or the relevant domain/action service verifies that the referenced action actually occurred and is eligible for scoring.
 
+This verification is an external call and is performed before any database transaction is opened, so the transaction never waits on the Action/Domain Service.
+
 The verification is based on:
 
 ```text
@@ -278,47 +295,45 @@ The Score API must not blindly trust a client-provided `referenceId` as proof th
 
 If the action is not eligible, the request fails without awarding points.
 
-For replayable application-level failures, the idempotency record may be completed with:
+Because verification happens before the idempotency key is claimed, this failure is not persisted as an idempotency result. Verification has no side effects, so it is always safe for the client to retry the same idempotency key once the eligibility conditions change.
 
-```text
-status = FAILED
-```
-
-and the original failure response.
-
-Unexpected infrastructure or database failures cause the transaction to roll back.
+`FAILED` is reserved for a different case, described in Section 6: a business-uniqueness conflict discovered during the transactional write.
 
 ---
 
 ## 6. Score Persistence
 
-After the action has been verified, the API performs the score mutation inside the same transaction.
+Only after the action has been verified does the API open a database transaction. The transaction wraps the idempotency claim and the score mutation together; it never spans the external verification call.
 
 The sequence is:
 
 ```text
 BEGIN TRANSACTION
 
-    idempotency record
+    Atomically claim idempotency key
     status = PROCESSING
-
-    ↓
 
     INSERT score_event
 
-    ↓
+    IF UNIQUE constraint violation (business-uniqueness conflict):
+        Mark idempotency record FAILED
+        response_status = 409 (ACTION_ALREADY_REWARDED)
+        (score event and aggregate update are not persisted)
 
-    UPDATE user_scores
-
-    ↓
-
-    UPDATE idempotency record
-    status = COMPLETED
-    response_status = 201
-    response_body = <original response>
+    ELSE (insert succeeded):
+        UPDATE user_scores
+        Mark idempotency record COMPLETED
+        response_status = 201
+        response_body = <original response>
 
 COMMIT
 ```
+
+If the idempotency claim itself conflicts with a concurrent request using the same key, the transaction rolls back and the API returns `409 IDEMPOTENCY_REQUEST_IN_PROGRESS`.
+
+If the score event insert conflicts with the business-uniqueness constraint, the transaction does not roll back entirely. Instead, the idempotency record is marked `FAILED` with the resulting `409 ACTION_ALREADY_REWARDED` response and the transaction commits. This memoizes the outcome under this idempotency key, so a client retry with the same key returns the same `409` immediately instead of re-attempting the insert.
+
+Any unexpected infrastructure or database failure at any point in the transaction causes a full `ROLLBACK`.
 
 The successful response is returned only after the transaction commits.
 
@@ -418,8 +433,8 @@ sequenceDiagram
     DB-->>API: Transaction A succeeds
     DB-->>API: Transaction B conflicts with UNIQUE constraint
 
-    API->>DB: Commit transaction A
-    API->>DB: Rollback transaction B
+    API->>DB: Commit transaction A<br/>idempotency A = COMPLETED
+    API->>DB: Mark idempotency B FAILED<br/>Commit transaction B
 
     API-->>ClientA: 201 Created
     API-->>ClientB: 409 ACTION_ALREADY_REWARDED
@@ -437,7 +452,7 @@ UNIQUE(
 
 This is the final protection against duplicate rewards.
 
-Idempotency keys do not replace this business-level constraint.
+Idempotency keys do not replace this business-level constraint. Client B's transaction still commits — only the score event insert is discarded, while the idempotency record for key B is persisted as `FAILED`. This means a retry using key B returns the same `409 ACTION_ALREADY_REWARDED` immediately, without repeating the insert attempt.
 
 ---
 
@@ -455,7 +470,7 @@ Only one transaction can successfully create:
 (user_id, action_definition_id, reference_id)
 ```
 
-The competing transaction receives a uniqueness conflict and must not update `user_scores`.
+The competing transaction receives a uniqueness conflict and must not update `user_scores`. It still commits its own idempotency record as `FAILED`, so a retry under that request's idempotency key does not repeat the conflict.
 
 Expected response:
 
@@ -506,9 +521,7 @@ Action verification fails
 4xx domain-specific response
 ```
 
-No score is awarded.
-
-If the request has already claimed an idempotency key, the failure may be stored as a replayable `FAILED` result.
+No score is awarded. No idempotency record exists at this point, because verification happens before the idempotency key is claimed. The client may safely retry the same idempotency key once the eligibility conditions change, without triggering an `IDEMPOTENCY_KEY_REUSED` conflict.
 
 ### Idempotency key reused
 
@@ -539,7 +552,7 @@ UNIQUE constraint violation
 409 ACTION_ALREADY_REWARDED
 ```
 
-The competing transaction is rolled back and no additional score is awarded.
+No additional score is awarded. The score event insert is discarded, but the transaction still commits with the idempotency record marked `FAILED`, so the outcome is memoized under that idempotency key.
 
 ### Unexpected database or infrastructure failure
 
@@ -557,21 +570,25 @@ The idempotency record, score event, and aggregate score are rolled back togethe
 
 ## 12. Transaction and Consistency Rules
 
+Action resolution and action eligibility verification are read-only and external-facing steps that occur before any database transaction is opened. They are never part of the transaction and never hold a database connection open while the API waits on the Identity Provider or the Action/Domain Service.
+
 The following operations belong to the same transaction for a new score-producing request:
 
 ```text
-Create idempotency record
+Claim idempotency key
         +
 Insert score event
         +
-Update user score
+Update user score (on success)
         +
-Complete idempotency record
+Complete idempotency record (COMPLETED or FAILED)
 ```
 
-A successful request commits all four changes together.
+A successful request commits all of these changes together.
 
-An unexpected transaction failure rolls back all four changes together.
+A business-uniqueness conflict on the score event still commits, but only the idempotency record is completed (as `FAILED`); the score event and aggregate update are not persisted.
+
+An unexpected infrastructure or database failure rolls the entire transaction back, including the idempotency claim.
 
 This guarantees consistency between:
 
@@ -580,6 +597,8 @@ idempotency state
 score event
 aggregate score
 ```
+
+while keeping the transaction's duration bounded to database-only work.
 
 ---
 
@@ -597,3 +616,4 @@ The following invariants must always hold:
 8. A successful score response is returned only after transaction commit.
 9. An unexpected infrastructure failure cannot leave a partial score mutation committed.
 10. A completed idempotent request can be safely replayed without awarding points again.
+11. The database transaction never spans a call to the Identity Provider or the Action/Domain Service; action verification always completes before the transaction is opened.
