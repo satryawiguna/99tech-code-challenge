@@ -147,15 +147,17 @@ resolved
 closed
 ```
 
-`status` is a server-controlled domain value.
+`status` is a domain-constrained value.
 
-A newly created Ticket always starts with:
+During Ticket creation, the server assigns:
 
 ```text
 status = open
 ```
 
-The client does not provide the initial status during Ticket creation.
+During updates, the client may request a supported status value, subject to domain validation.
+
+The client cannot override the initial status during Ticket creation.
 
 ---
 
@@ -173,7 +175,7 @@ medium
 high
 ```
 
-`priority` is a domain-controlled value and must always contain one of the supported values.
+`priority` is a domain-constrained value and must always contain one of the supported values.
 
 The client may provide the priority during Ticket creation and update it later, subject to the API and domain validation rules.
 
@@ -227,11 +229,13 @@ The lifecycle represents the intended progression of a support ticket.
 
 However, the challenge only requires CRUD operations and does not explicitly require a workflow engine.
 
-Therefore, the implementation should not introduce complex workflow orchestration.
+Therefore, the implementation should not introduce complex workflow orchestration or enforce a strict status-transition matrix.
 
-The application must at minimum ensure that `status` contains a valid domain value.
+The application must ensure that `status` contains a valid domain value.
 
-Any strict transition restrictions will only be implemented if they are justified during architecture and implementation design.
+During updates, any supported status value may be assigned, provided that the value satisfies the domain's valid status constraint.
+
+If future requirements introduce strict lifecycle transitions, that change must be explicitly documented as a domain decision and reflected in the API contract.
 
 ---
 
@@ -356,7 +360,7 @@ updatedAt
 
 The final update payload and validation rules will be defined in the API contract.
 
-Any strict status-transition rules remain subject to the final architecture and API design.
+The current domain does not enforce a strict status-transition matrix. Any supported status value may be requested during an update, subject to domain validation.
 
 ---
 

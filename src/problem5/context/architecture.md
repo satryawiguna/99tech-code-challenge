@@ -162,6 +162,8 @@ The domain owns:
 - Ticket status;
 - Ticket priority;
 - domain invariants;
+- status validity without enforcing a strict transition matrix;
+- priority constraints while allowing client-provided priority values;
 - domain rules;
 - mutable versus immutable attributes.
 
@@ -420,7 +422,9 @@ The domain protects:
 - valid priority values;
 - required domain attributes;
 - immutable attributes;
-- initial status behavior.
+- initial status behavior;
+- absence of a strict status-transition matrix;
+- domain constraints on client-provided priority values.
 
 ### Persistence Validation
 
@@ -681,6 +685,7 @@ These technologies are not justified by the current challenge requirements.
 | Repository abstraction     | Selected     | Isolates persistence from application logic      |
 | Simple database            | Confirmed    | Challenge requirement                            |
 | `/api/v1` versioning       | Selected     | Provides a clear API boundary                    |
+| Status transition matrix   | Not enforced | CRUD scope does not require workflow rules       |
 | Authentication             | Out of scope | Not required by challenge                        |
 | Microservices              | Out of scope | Not justified by challenge scope                 |
 | Distributed infrastructure | Out of scope | Not justified by expected workload               |
@@ -699,6 +704,7 @@ These technologies are not justified by the current challenge requirements.
 | Ticket as primary resource | Domain Section 2                 |
 | Ticket invariants          | Domain Section 7                 |
 | Initial status `open`      | Domain `DR-04`                   |
+| Status transition policy   | Domain Section 6                 |
 | Status values              | Domain `DR-05`                   |
 | Priority values            | Domain `DR-06`                   |
 | No authentication          | Discovery `A-04`                 |
