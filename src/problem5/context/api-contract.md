@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the HTTP API contract for Problem 5 based on the approved discovery, domain model, and backend architecture.
+This document defines the HTTP API contract for Problem 5 based on the approved discovery, PRD, domain model and backend architecture.
 
 The API exposes CRUD operations for the `Ticket` resource through a versioned REST interface.
 
@@ -724,18 +724,16 @@ Once this API contract is approved, the next phase is:
 
 ```text
 Discovery
-    ↓
+   ↓
+PRD
+   ↓
 Domain
-    ↓
+   ↓
 Architecture
-    ↓
+   ↓
 API Contract
-    ↓
+   ↓
 Database Design
-    ↓
-Implementation Plan
-    ↓
-Implementation
 ```
 
 The database design must preserve the API contract and domain invariants.

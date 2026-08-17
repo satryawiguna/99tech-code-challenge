@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the backend architecture for Problem 5 based on the approved discovery and domain model.
+This document defines the backend architecture for Problem 5 based on the approved discovery, PRD, and domain model.
 
 The architecture establishes the application boundaries, dependency direction, request flow, persistence boundary, error handling, validation strategy, testing strategy, and operational baseline before implementation begins.
 
@@ -64,12 +64,14 @@ HTTP / Interface Layer
 Application Layer
         ↓
 Domain Layer
+
+Application Layer
         ↓
-Persistence Abstraction
-        ↓
+Repository Abstraction
+        ↑
 Persistence Implementation
         ↓
-Database
+SQLite
 ```
 
 The architecture is intentionally not a full enterprise or microservice architecture.
@@ -395,7 +397,7 @@ TicketRepository
 + delete()
 ```
 
-The exact interface signature will be finalized during implementation planning.
+The exact interface signature is an implementation-level detail to be defined during execution planning.
 
 Filtering parameters required by `ListTickets` should be represented through application-level types rather than database-specific query objects.
 
@@ -473,9 +475,9 @@ Internal error details must not be exposed to clients unnecessarily.
 
 The application will use a simple persistent database appropriate for the challenge.
 
-The database technology is intentionally not fixed in this architecture document.
+SQLite is the selected persistence technology, as defined by the database design.
 
-The final choice will be made during database design based on:
+The selection is based on:
 
 - simplicity;
 - local development experience;
@@ -587,7 +589,7 @@ Verify:
 - response structure;
 - error mapping.
 
-The exact testing framework will be selected during implementation planning.
+The exact testing framework is an implementation-level detail to be selected during execution planning.
 
 ---
 
@@ -692,22 +694,22 @@ These technologies are not justified by the current challenge requirements.
 
 ---
 
-## 24. Traceability to Discovery and Domain
+## 24. Traceability to Discovery, PRD, and Domain
 
 | Architecture Decision      | Source                           |
 | -------------------------- | -------------------------------- |
 | ExpressJS backend          | Discovery `CR-01` / `FR-01`      |
 | TypeScript                 | Discovery `CR-02` / `FR-02`      |
 | CRUD use cases             | Discovery `FR-03` to `FR-07`     |
-| Basic filtering            | Discovery `FR-04`                |
-| Simple persistence         | Discovery `FR-08`                |
-| Ticket as primary resource | Domain Section 2                 |
+| Basic filtering            | PRD / Discovery `FR-04`          |
+| Ticket as primary resource | PRD / Domain Section 2           |
 | Ticket invariants          | Domain Section 7                 |
 | Initial status `open`      | Domain `DR-04`                   |
 | Status transition policy   | Domain Section 6                 |
 | Status values              | Domain `DR-05`                   |
 | Priority values            | Domain `DR-06`                   |
-| No authentication          | Discovery `A-04`                 |
+| Simple persistence         | Discovery `FR-08` / PRD          |
+| No authentication          | Discovery `A-04` / PRD           |
 | Single service             | Discovery `A-02`                 |
 | Proportional architecture  | Discovery Engineering Principles |
 
@@ -774,18 +776,16 @@ Once this architecture is approved, the next phase is to define the concrete con
 
 ```text
 Discovery
-    ↓
+   ↓
+PRD
+   ↓
 Domain
-    ↓
+   ↓
 Architecture
-    ↓
+   ↓
 API Contract
-    ↓
+   ↓
 Database Design
-    ↓
-Implementation Plan
-    ↓
-Implementation
 ```
 
 The API contract must consume the domain and architecture decisions rather than independently redefining them.

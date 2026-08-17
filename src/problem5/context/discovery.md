@@ -477,7 +477,7 @@ Caching, queues, microservices, and other distributed infrastructure should not 
 
 ## 17. AI-Assisted Development Boundary
 
-AI-assisted development will support the engineering workflow.
+AI-assisted development may support the engineering workflow.
 
 AI may assist with:
 
@@ -487,7 +487,8 @@ AI may assist with:
 - architecture proposals;
 - API design;
 - database design;
-- implementation planning;
+- PRD drafting;
+- planning;
 - code implementation;
 - test generation;
 - code review;
@@ -524,38 +525,36 @@ At the end of discovery, the following decisions are established:
 | README                     | Confirmed    | Challenge requirement |
 | Support Ticket domain      | Selected     | Engineering decision  |
 | Ticket as primary resource | Selected     | Engineering decision  |
-| `status` filtering         | Proposed     | Engineering decision  |
-| `priority` filtering       | Proposed     | Engineering decision  |
+| `status` filtering         | Confirmed    | Engineering decision  |
+| `priority` filtering       | Confirmed    | Engineering decision  |
 | Authentication             | Out of scope | Scope decision        |
 | User management            | Out of scope | Scope decision        |
 | Microservices              | Out of scope | Scope decision        |
 
-The proposed items remain subject to review during domain and architecture design.
+The selected filtering decisions are now confirmed by the approved PRD, domain model, API contract, and database design.
 
 ---
 
 ## 19. Next Phase
 
-Discovery is complete when the selected domain, scope, assumptions, and acceptance criteria have been reviewed.
+Discovery is complete.
 
-The next phase is:
+The stable product/engineering context sequence is:
 
 ```text
 Discovery
     ↓
-Domain Design
+PRD
+    ↓
+Domain
     ↓
 Architecture
     ↓
-API / Database Contract
+API Contract
     ↓
-Implementation Plan
-    ↓
-Implementation
-    ↓
-Testing
-    ↓
-Security / Code Review
+Database Design
 ```
 
-No production implementation should begin before the domain and architecture decisions have been reviewed.
+After the stable context is approved, Claude Code / AI engineering setup can consume these documents.
+
+Planning is treated as an execution activity derived from the approved context rather than a permanent context document.

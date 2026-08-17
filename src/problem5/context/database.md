@@ -4,10 +4,12 @@
 
 This document defines the persistence design for the Problem 5 Support Ticket Management API.
 
-The database design is derived from the approved engineering artifacts:
+The database design is derived from the approved engineering context:
 
 ```text
 discovery.md
+    ↓
+prd.md
     ↓
 domain.md
     ↓
@@ -607,7 +609,7 @@ Domain-constrained values are reinforced at the database boundary without moving
 
 ### Architecture → Database
 
-The architecture defines a repository abstraction between the application/domain and persistence layers.
+The architecture defines a repository abstraction between the application and persistence layers.
 
 The SQLite implementation therefore remains behind:
 
@@ -681,16 +683,12 @@ The key engineering decisions are:
 
 ## 20. Next Phase
 
-With the database design defined, the next artifact is:
-
-```text
-implementation-plan.md
-```
-
-It should translate:
+The stable engineering context is now:
 
 ```text
 Discovery
+    ↓
+PRD
     ↓
 Domain
     ↓
@@ -699,8 +697,8 @@ Architecture
 API Contract
     ↓
 Database Design
-    ↓
-Implementation Plan
 ```
 
-The implementation plan will define the concrete project structure, dependencies, modules, repository implementation, validation, testing approach, and implementation sequence before production code is written.
+The next activity is Claude Code / AI engineering setup and execution planning.
+
+Planning is treated as an execution artifact derived from this approved context rather than as a permanent context document.
