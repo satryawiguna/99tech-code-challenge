@@ -293,7 +293,7 @@ The idempotency record uses the following states:
 | ------------ | -------------------------------------------------------------------------------- |
 | `PROCESSING` | The request has claimed the idempotency key and is currently being processed     |
 | `COMPLETED`  | The request has completed successfully and the original response has been stored |
-| `FAILED`     | The request has completed with a replayable application-level failure response   |
+| `FAILED`     | The request's score-event insert conflicted with the business uniqueness constraint; the outcome (`409 ACTION_ALREADY_REWARDED`) is stored and replayable |
 
 ### Constraints
 
@@ -303,15 +303,17 @@ UNIQUE(user_id, idempotency_key)
 
 The `request_hash` is used to detect reuse of an idempotency key with a different request payload.
 
-For a new request, the service attempts to create an idempotency record with:
+Before a record is created, the service performs a read-only lookup for an existing record matching `(user_id, idempotency_key)`. This lookup, together with action resolution and action eligibility verification, happens before any database transaction is opened, so the transaction never spans an external call.
+
+Only for a new, verified request does the service open a transaction and attempt to create an idempotency record with:
 
 ```text
 status = PROCESSING
 ```
 
-The creation is performed atomically using the database uniqueness constraint.
+The creation is performed atomically using the database uniqueness constraint, inside the same transaction as the score event insert (see Section 12).
 
-If the record is successfully created, the request owns the idempotency key and may continue processing.
+If the record is successfully created, the request owns the idempotency key and the transaction proceeds to insert the score event.
 
 If the same user sends the same idempotency key again:
 
@@ -345,15 +347,15 @@ response_status = 201
 response_body   = <original response>
 ```
 
-After a replayable application-level failure:
+After a business-uniqueness conflict on the score event insert:
 
 ```text
 FAILED
-response_status = <original error status>
-response_body   = <original error response>
+response_status = 409
+response_body   = <ACTION_ALREADY_REWARDED error response>
 ```
 
-Authentication and request-validation failures occur before an idempotency record is created and therefore are not persisted as idempotency results.
+Authentication, authorization, request-validation, and action-eligibility failures all occur before an idempotency record is created and are therefore not persisted as idempotency results. Because none of these checks have side effects, retrying with the same idempotency key is always safe.
 
 ### Expiration
 
@@ -463,7 +465,9 @@ The exact index syntax depends on the selected database engine.
 
 ## 12. Score Update Transaction
 
-A new score-producing request must persist the idempotency record, score event, and aggregate score atomically within the same database transaction.
+Action resolution and action eligibility verification happen before the transaction begins. The database transaction is opened only once the action has been verified, and it is scoped strictly to database-only work: claiming the idempotency key, writing the score event, updating the aggregate, and completing the idempotency record.
+
+The transaction never spans a call to the Identity Provider or the Action/Domain Service. This keeps the transaction short and avoids holding database locks or a pooled connection open while waiting on an external, potentially slow or unavailable service.
 
 The idempotency key is protected by:
 
@@ -476,38 +480,48 @@ Conceptually:
 ```text
 BEGIN TRANSACTION
 
-    Create idempotency record
+    Atomically claim idempotency record
     status = PROCESSING
 
     Insert score event
 
-    Update aggregate user score
+    IF business-uniqueness conflict:
+        Update idempotency record
+        status = FAILED
+        response_status = 409
+        response_body = <ACTION_ALREADY_REWARDED response>
+        (score event and aggregate update are not persisted)
 
-    Update idempotency record
-    status = COMPLETED
-    response_status = 201
-    response_body = <original response>
+    ELSE:
+        Update aggregate user score
+
+        Update idempotency record
+        status = COMPLETED
+        response_status = 201
+        response_body = <original response>
 
 COMMIT
 ```
 
-If an expected application-level failure occurs after the idempotency record has been created, the transaction may persist the idempotency record as:
+A business-uniqueness conflict on the score event insert is an expected outcome, not an infrastructure failure. The transaction still commits, but only the idempotency record's completion is persisted as `FAILED`; the score event and aggregate update are discarded. This memoizes the `409 ACTION_ALREADY_REWARDED` outcome under that idempotency key so a retry with the same key does not repeat the insert attempt.
 
-```text
-FAILED
-```
-
-along with the replayable error response.
-
-If an unexpected infrastructure or database failure occurs:
+If the idempotency claim itself conflicts because a concurrent request already holds the same `(user_id, idempotency_key)`:
 
 ```text
 ROLLBACK
 ```
 
-The idempotency record, score event, and aggregate score update are rolled back together.
+The service returns `409 IDEMPOTENCY_REQUEST_IN_PROGRESS` without creating any new state.
 
-If the idempotency record already exists for the same `(user_id, idempotency_key)`, the service must inspect the existing record and compare its `request_hash`.
+If an unexpected infrastructure or database failure occurs at any other point:
+
+```text
+ROLLBACK
+```
+
+The idempotency claim, score event, and aggregate score update are rolled back together.
+
+If an idempotency record already exists for the same `(user_id, idempotency_key)` at the pre-check stage (see Section 9), the service inspects the existing record and its `request_hash` before ever opening a transaction.
 
 ---
 
@@ -542,8 +556,10 @@ or:
 ```text
 PROCESSING
     ↓
-FAILED
+FAILED   (business-uniqueness conflict on the score event)
 ```
+
+The key is claimed only after the action has been resolved and verified, so the claim, the write, and the completion of the idempotency record all happen inside one short, database-only transaction.
 
 The same key with the same request is replayed according to the stored idempotency response.
 
@@ -593,7 +609,7 @@ Only one transaction can successfully create:
 (user_id, action_definition_id, reference_id)
 ```
 
-The competing transaction receives a uniqueness conflict and must not award additional points.
+The competing transaction receives a uniqueness conflict and must not award additional points. It still commits, but only to mark its own idempotency record as `FAILED` — the score event and aggregate update are discarded.
 
 The API returns:
 
@@ -601,7 +617,7 @@ The API returns:
 409 ACTION_ALREADY_REWARDED
 ```
 
-rather than awarding the points twice.
+rather than awarding the points twice. A retry using that same request's idempotency key returns the same `409` immediately from the stored `FAILED` record, without repeating the insert attempt.
 
 ---
 
