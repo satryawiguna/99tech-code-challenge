@@ -1,0 +1,30 @@
+services:
+  ticket-api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: dev
+      PORT: 3000
+      DATABASE_URL: /app/data/tickets.dev.sqlite
+    ports:
+      - "3001:3000"
+    volumes:
+      - ticket-data-dev:/app/data
+
+  ticket-api-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: prod
+      PORT: 3000
+      DATABASE_URL: /app/data/tickets.prod.sqlite
+    ports:
+      - "3002:3000"
+    volumes:
+      - ticket-data-prod:/app/data
+
+volumes:
+  ticket-data-dev:
+  ticket-data-prod:
