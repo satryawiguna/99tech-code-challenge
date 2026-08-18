@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+data
+.env
+.env.local
+.env.dev
+.env.prod
+test
+planning
+context
+.git
+*.log
