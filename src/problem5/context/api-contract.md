@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the HTTP API contract for Problem 5 based on the approved discovery, PRD, domain model and backend architecture.
+This document defines the HTTP API contract for Problem 5 based on the approved discovery, domain model, and backend architecture.
 
 The API exposes CRUD operations for the `Ticket` resource through a versioned REST interface.
 
@@ -16,7 +16,8 @@ This document defines:
 - HTTP status codes;
 - validation behavior;
 - filtering behavior;
-- error response structure.
+- error response structure;
+- API documentation requirements, including OpenAPI and interactive Swagger UI.
 
 The contract is intentionally limited to the challenge scope.
 
@@ -596,7 +597,39 @@ Domain and application layers must remain independent of this URL version.
 
 ---
 
-## 17. API Idempotency
+## 17. API Documentation
+
+The backend must provide API documentation based on the approved API contract.
+
+The documentation must provide:
+
+- a machine-readable OpenAPI specification;
+- an interactive Swagger UI;
+- documentation for all public API endpoints;
+- request and response schemas;
+- path and query parameters;
+- supported validation rules;
+- HTTP response status codes;
+- error response structures;
+- supported filtering behavior.
+
+The API documentation must remain consistent with the approved API contract and the implemented HTTP behavior.
+
+### Documentation Accessibility
+
+The interactive Swagger UI must be accessible while the backend server is running through a documented HTTP endpoint.
+
+The exact documentation route and OpenAPI/Swagger tooling are implementation-level decisions unless explicitly finalized elsewhere.
+
+### Documentation Boundary
+
+API documentation is part of the API delivery surface but does not introduce additional API behavior.
+
+The OpenAPI specification and Swagger UI must describe the approved API rather than define undocumented features or behavior.
+
+---
+
+## 18. API Idempotency
 
 The current CRUD operations do not require a dedicated idempotency-key mechanism.
 
@@ -606,7 +639,7 @@ If idempotency becomes a requirement in the future, it must be introduced explic
 
 ---
 
-## 18. Authentication and Authorization
+## 19. Authentication and Authorization
 
 Authentication and authorization are intentionally not part of the API contract.
 
@@ -625,7 +658,7 @@ Adding authentication would expand the scope beyond the current challenge requir
 
 ---
 
-## 19. Pagination
+## 20. Pagination
 
 Pagination is not part of the initial API contract.
 
@@ -635,7 +668,7 @@ Pagination may be introduced later if a concrete requirement justifies it.
 
 ---
 
-## 20. Response Envelope
+## 21. Response Envelope
 
 Successful responses containing data use:
 
@@ -657,53 +690,56 @@ The `204 No Content` delete response does not contain a response envelope becaus
 
 ---
 
-## 21. API Contract Traceability
+## 22. API Contract Traceability
 
-| API Decision                 | Source                                     |
-| ---------------------------- | ------------------------------------------ |
-| REST CRUD interface          | Discovery `CR-03` to `CR-08`               |
-| Ticket resource              | Discovery Section 5 / Domain Section 2     |
-| Create operation             | Discovery `FR-03` / Domain Section 8       |
-| List operation               | Discovery `FR-04` / Domain Section 11      |
-| Get operation                | Discovery `FR-05`                          |
-| Update operation             | Discovery `FR-06` / Domain Section 9       |
-| Delete operation             | Discovery `FR-07` / Domain Section 10      |
-| `status` filter              | Discovery Section 11 / Domain Section 11   |
-| `priority` filter            | Discovery Section 11 / Domain Section 11   |
-| Initial status `open`        | Domain `DR-04`                             |
-| Status values                | Domain `DR-05`                             |
-| Priority values              | Domain `DR-06`                             |
-| Server-controlled timestamps | Domain `DR-07` to `DR-09`                  |
-| API versioning               | Architecture Section 17                    |
-| Application use cases        | Architecture Section 10                    |
-| HTTP/application separation  | Architecture Sections 6 and 7              |
-| No authentication            | Discovery `A-04` / Architecture Section 19 |
-
----
-
-## 22. API Decision Summary
-
-| Decision              | Status       | Rationale                                  |
-| --------------------- | ------------ | ------------------------------------------ |
-| REST API              | Confirmed    | Appropriate for CRUD challenge             |
-| `/api/v1/tickets`     | Confirmed    | Resource-oriented versioned endpoint       |
-| `POST` create         | Confirmed    | Required CRUD operation                    |
-| `GET` list            | Confirmed    | Required CRUD operation                    |
-| `GET /:id`            | Confirmed    | Required CRUD operation                    |
-| `PATCH /:id`          | Confirmed    | Partial update semantics from domain model |
-| `DELETE /:id`         | Confirmed    | Required CRUD operation                    |
-| `status` filter       | Confirmed    | Basic domain-relevant filter               |
-| `priority` filter     | Confirmed    | Basic domain-relevant filter               |
-| JSON request/response | Selected     | Appropriate for REST API                   |
-| `201` for create      | Selected     | Resource creation semantics                |
-| `204` for delete      | Selected     | No response body required                  |
-| Authentication        | Out of scope | Not required                               |
-| Pagination            | Out of scope | Not required                               |
-| Dedicated idempotency | Out of scope | Not required                               |
+| API Decision                 | Source                                               |
+| ---------------------------- | ---------------------------------------------------- |
+| REST CRUD interface          | Discovery `CR-03` to `CR-08`                         |
+| Ticket resource              | Discovery Section 5 / Domain Section 2               |
+| Create operation             | Discovery `FR-03` / Domain Section 8                 |
+| List operation               | Discovery `FR-04` / Domain Section 11                |
+| Get operation                | Discovery `FR-05`                                    |
+| Update operation             | Discovery `FR-06` / Domain Section 9                 |
+| Delete operation             | Discovery `FR-07` / Domain Section 10                |
+| `status` filter              | Discovery Section 11 / Domain Section 11             |
+| `priority` filter            | Discovery Section 11 / Domain Section 11             |
+| Initial status `open`        | Domain `DR-04`                                       |
+| Status values                | Domain `DR-05`                                       |
+| Priority values              | Domain `DR-06`                                       |
+| Server-controlled timestamps | Domain `DR-07` to `DR-09`                            |
+| API versioning               | Architecture Section 17                              |
+| Application use cases        | Architecture Section 10                              |
+| HTTP/application separation  | Architecture Sections 6 and 7                        |
+| No authentication            | Discovery `A-04` / Architecture Section 19           |
+| OpenAPI / Swagger UI         | API documentation requirement added to this contract |
 
 ---
 
-## 23. Open API Design Items
+## 23. API Decision Summary
+
+| Decision              | Status       | Rationale                                     |
+| --------------------- | ------------ | --------------------------------------------- |
+| REST API              | Confirmed    | Appropriate for CRUD challenge                |
+| `/api/v1/tickets`     | Confirmed    | Resource-oriented versioned endpoint          |
+| `POST` create         | Confirmed    | Required CRUD operation                       |
+| `GET` list            | Confirmed    | Required CRUD operation                       |
+| `GET /:id`            | Confirmed    | Required CRUD operation                       |
+| `PATCH /:id`          | Confirmed    | Partial update semantics from domain model    |
+| `DELETE /:id`         | Confirmed    | Required CRUD operation                       |
+| `status` filter       | Confirmed    | Basic domain-relevant filter                  |
+| `priority` filter     | Confirmed    | Basic domain-relevant filter                  |
+| JSON request/response | Selected     | Appropriate for REST API                      |
+| `201` for create      | Selected     | Resource creation semantics                   |
+| `204` for delete      | Selected     | No response body required                     |
+| Authentication        | Out of scope | Not required                                  |
+| Pagination            | Out of scope | Not required                                  |
+| Dedicated idempotency | Out of scope | Not required                                  |
+| OpenAPI specification | Confirmed    | Machine-readable API contract documentation   |
+| Swagger UI            | Confirmed    | Interactive API documentation for development |
+
+---
+
+## 24. OpenAPI Design Items
 
 The following details remain intentionally open for implementation-level finalization:
 
@@ -711,31 +747,31 @@ The following details remain intentionally open for implementation-level finaliz
 - exact identifier format;
 - validation library;
 - exact OpenAPI generation/tooling;
-- exact API documentation hosting;
+- exact API documentation route/hosting;
 - database-specific error mapping.
 
 These items must not change the domain semantics or architectural boundaries defined by the approved documents.
 
 ---
 
-## 24. Next Phase
+## 25. Next Phase
 
-Once this API contract is approved, the next phase is:
+Once this API contract is approved, the remaining stable context includes the database design.
+
+The execution phase then proceeds through:
 
 ```text
-Discovery
-   ↓
-PRD
-   ↓
-Domain
-   ↓
-Architecture
-   ↓
-API Contract
-   ↓
-Database Design
+Approved Context
+    ↓
+Implementation Planning
+    ↓
+Human Approval
+    ↓
+Implementation
 ```
+
+Planning and implementation are execution activities, not additional context documents.
 
 The database design must preserve the API contract and domain invariants.
 
-The implementation must treat this API contract as the source of truth for externally observable HTTP behavior.
+The implementation must treat this API contract as the source of truth for externally observable HTTP behavior, including the documented API surface and API documentation requirements.

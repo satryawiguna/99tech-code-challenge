@@ -35,6 +35,7 @@ The database implementation must satisfy the following requirements:
 - Enforce domain-constrained values at the persistence boundary where appropriate.
 - Support reliable retrieval of a ticket by its identifier.
 - Remain simple and proportional to the scope of the challenge.
+- Support isolated database configuration for `local`, `dev`, and `prod`.
 
 The challenge requires a simple database for persistence; it does not prescribe a specific database technology.
 
@@ -59,6 +60,39 @@ SQLite is appropriate for this challenge because:
 7. The architecture keeps persistence behind a repository abstraction, so the domain and application layers do not depend directly on SQLite.
 
 This is an engineering decision, not a requirement imposed by the challenge.
+
+### Environment Isolation
+
+The application supports three environments:
+
+```text
+local
+dev
+prod
+```
+
+Each environment must use its own SQLite database configuration and must not share the same SQLite database file with another environment.
+
+Conceptually:
+
+```text
+local
+  └── local SQLite database
+
+dev
+  └── dev SQLite database
+
+prod
+  └── prod SQLite database
+```
+
+The database location must be configuration-driven rather than hard-coded into application logic.
+
+For containerized `dev` and `prod` environments, the SQLite database file must be stored on persistent storage so that data survives container recreation or restart.
+
+The exact database file paths, environment variable names, and Docker volume configuration are implementation-level decisions to be defined during execution planning.
+
+Environment isolation must prevent local development data from being used by `dev` or `prod`, and must prevent `dev` data from being used by `prod`.
 
 ---
 
