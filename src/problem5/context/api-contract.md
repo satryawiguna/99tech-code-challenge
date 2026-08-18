@@ -476,6 +476,7 @@ The following conditions must be rejected:
 - missing `title`;
 - empty `title`;
 - missing `description`;
+- empty `description`;
 - invalid `priority`;
 - client-provided authoritative `id`;
 - client-provided authoritative `status`;
@@ -495,6 +496,7 @@ The following conditions must be rejected:
 
 - empty update body;
 - empty `title` when supplied;
+- empty `description` when supplied;
 - invalid `status`;
 - invalid `priority`;
 - attempts to modify `id`;

@@ -1,741 +1,937 @@
-# Problem 5 — Database Design
+# Problem 5 — Backend Architecture
 
 ## 1. Purpose
 
-This document defines the persistence design for the Problem 5 Support Ticket Management API.
+This document defines the backend architecture for Problem 5 based on the approved discovery, PRD, and domain model.
 
-The database design is derived from the approved engineering context:
+The architecture establishes the application boundaries, dependency direction, request flow, persistence boundary, API documentation boundary, error handling, validation strategy, testing strategy, runtime model, and operational baseline before implementation begins.
 
-```text
-discovery.md
-    ↓
-prd.md
-    ↓
-domain.md
-    ↓
-architecture.md
-    ↓
-api-contract.md
-    ↓
-database.md
-```
-
-The purpose of this document is to define how the `Ticket` domain is persisted without introducing database concerns into the domain model.
+The architecture is intentionally proportional to the challenge scope and recommended 16-hour duration.
 
 ---
 
-## 2. Database Requirements
+## 2. Architectural Goals
 
-The database implementation must satisfy the following requirements:
+The architecture should:
 
-- Persist ticket data beyond the lifetime of the application process.
-- Support the required CRUD operations.
-- Support basic filtering by `status` and `priority`.
-- Preserve server-owned identifiers and timestamps.
-- Enforce domain-constrained values at the persistence boundary where appropriate.
-- Support reliable retrieval of a ticket by its identifier.
-- Remain simple and proportional to the scope of the challenge.
-- Support isolated database configuration for `local`, `dev`, and `prod`.
-
-The challenge requires a simple database for persistence; it does not prescribe a specific database technology.
+- provide a clear RESTful CRUD interface;
+- keep the implementation simple and maintainable;
+- separate HTTP concerns from application and domain logic;
+- isolate persistence concerns behind an explicit boundary;
+- make domain rules independently testable;
+- support basic filtering;
+- provide predictable error handling;
+- provide machine-readable and interactive API documentation;
+- make configuration environment-aware;
+- support local development and containerized execution;
+- provide a reasonable testing boundary;
+- avoid infrastructure that is not justified by the challenge.
 
 ---
 
-## 3. Database Technology Decision
+## 3. Architectural Constraints
 
-### Selected technology: SQLite
+The architecture must satisfy the following challenge constraints:
 
-SQLite is selected as the persistence technology for Problem 5.
+| Constraint           | Decision                 |
+| -------------------- | ------------------------ |
+| Backend framework    | ExpressJS                |
+| Language             | TypeScript               |
+| Interface            | RESTful CRUD API         |
+| Persistence          | Simple database          |
+| Filtering            | Basic resource filtering |
+| Documentation        | `README.md`              |
+| Recommended duration | 16 hours                 |
 
-### Rationale
+The following are engineering decisions for Problem 5 rather than additional challenge requirements:
 
-SQLite is appropriate for this challenge because:
+- OpenAPI-based API documentation;
+- interactive Swagger UI;
+- environment-aware runtime configuration;
+- Docker support;
+- separate configuration and persistence for `local`, `dev`, and `prod`.
 
-1. The challenge requires a simple persistent database rather than a distributed database.
-2. The application has a single primary resource: `Ticket`.
-3. The expected workload and data volume are small.
-4. SQLite provides relational persistence without requiring a separate database server.
-5. It keeps local setup simple for reviewers.
-6. It reduces infrastructure requirements while still demonstrating database-backed CRUD implementation.
-7. The architecture keeps persistence behind a repository abstraction, so the domain and application layers do not depend directly on SQLite.
+The challenge does not require:
 
-This is an engineering decision, not a requirement imposed by the challenge.
+- authentication;
+- authorization;
+- microservices;
+- distributed infrastructure;
+- real-time communication;
+- external service integrations.
 
-### Environment Isolation
+---
 
-The application supports three environments:
+## 4. Architecture Style
 
-```text
-local
-dev
-prod
-```
-
-Each environment must use its own SQLite database configuration and must not share the same SQLite database file with another environment.
+The backend will use a **layered architecture with explicit dependency boundaries**.
 
 Conceptually:
 
 ```text
-local
-  └── local SQLite database
+HTTP / Interface Layer
+        ↓
+Application Layer
+        ↓
+Domain Layer
 
-dev
-  └── dev SQLite database
-
-prod
-  └── prod SQLite database
+Application Layer
+        ↓
+Repository Abstraction
+        ↑
+Persistence Implementation
+        ↓
+SQLite
 ```
 
-The database location must be configuration-driven rather than hard-coded into application logic.
+The architecture is intentionally not a full enterprise or microservice architecture.
 
-For containerized `dev` and `prod` environments, the SQLite database file must be stored on persistent storage so that data survives container recreation or restart.
-
-The exact database file paths, environment variable names, and Docker volume configuration are implementation-level decisions to be defined during execution planning.
-
-Environment isolation must prevent local development data from being used by `dev` or `prod`, and must prevent `dev` data from being used by `prod`.
+The purpose of the layers is to keep responsibilities clear and make the code easier to test and evolve.
 
 ---
 
-## 4. Persistence Model
+## 5. System Boundary
 
-The persistence model contains one primary table:
-
-```text
-tickets
-```
-
-The table represents the `Ticket` resource defined by the domain model.
-
-```text
-tickets
-│
-├── id
-├── title
-├── description
-├── status
-├── priority
-├── created_at
-└── updated_at
-```
-
-No additional tables are required for the current scope.
-
----
-
-## 5. Ticket Table
-
-### Table
-
-```text
-tickets
-```
-
-### Schema
-
-| Column        | Type | Nullable | Default  | Constraint                 |
-| ------------- | ---- | -------: | -------- | -------------------------- |
-| `id`          | TEXT |       No | —        | Primary key                |
-| `title`       | TEXT |       No | —        | Must not be empty          |
-| `description` | TEXT |       No | —        | Must not be empty          |
-| `status`      | TEXT |       No | `'open'` | `CHECK` constrained        |
-| `priority`    | TEXT |       No | —        | `CHECK` constrained        |
-| `created_at`  | TEXT |       No | —        | Server-owned UTC timestamp |
-| `updated_at`  | TEXT |       No | —        | Server-owned UTC timestamp |
-
-The application is responsible for generating timestamps rather than relying on database-specific timestamp defaults.
-
----
-
-## 6. Primary Key Strategy
-
-The `id` is generated by the application rather than supplied by the client.
-
-The API contract establishes that `id` is server-owned.
-
-The persistence layer therefore stores the generated identifier as the primary key.
-
-### Decision
+The system boundary is:
 
 ```text
 Client
-  ↓
-Create Ticket request
-  ↓
-Application generates ID
-  ↓
-Repository persists ID
+  │
+  │ HTTP
+  ▼
+┌──────────────────────────────┐
+│       Ticket API Service     │
+│                              │
+│  Interface / HTTP Layer      │
+│             ↓                │
+│  Application Layer           │
+│             ↓                │
+│  Domain Layer                │
+│             ↓                │
+│  Persistence Boundary        │
+│             ↓                │
+│  Persistence Implementation  │
+└──────────────┬───────────────┘
+               │
+               ▼
+          Simple Database
 ```
 
-The client must not be able to override an existing ticket identifier.
+The Ticket API Service owns the Ticket application behavior and persistence required by the challenge.
 
-A string-based identifier is preferred for the application because it keeps identifier generation independent from database-specific auto-increment behavior.
+API documentation is part of the service boundary and describes the exposed HTTP interface through an OpenAPI specification and an interactive Swagger UI.
 
-The exact identifier-generation library or algorithm belongs to the implementation phase.
+User identity, authentication, and external support-system capabilities are outside this boundary.
 
 ---
 
-## 7. Domain-Constrained Fields
+## 6. Architectural Layers
 
-### Status
+### 6.1 Interface / HTTP Layer
 
-The domain defines the following valid ticket statuses:
+Responsible for:
 
-```text
-open
-in_progress
-resolved
-closed
-```
+- Express application setup;
+- routing;
+- HTTP request handling;
+- request parsing;
+- request validation at the API boundary;
+- mapping application results to HTTP responses;
+- mapping application errors to HTTP responses;
+- exposing the API documentation interface.
 
-The initial status of a newly created ticket is:
+The HTTP layer must not contain database access logic.
 
-```text
-open
-```
-
-The database must not accept arbitrary status values.
-
-The database constraint should therefore be equivalent to:
-
-```sql
-CHECK (status IN (
-  'open',
-  'in_progress',
-  'resolved',
-  'closed'
-))
-```
-
-The current design does **not** introduce a strict status-transition matrix. Any valid status may be used during an update unless a future domain decision introduces explicit transition rules.
-
-### Priority
-
-The supported priority values are:
-
-```text
-low
-medium
-high
-```
-
-`priority` is client-provided but domain-constrained.
-
-The database should reinforce the domain constraint:
-
-```sql
-CHECK (priority IN (
-  'low',
-  'medium',
-  'high'
-))
-```
-
-The persistence layer must therefore only persist values accepted by the domain/application validation rules.
-
-Database constraints complement domain validation; they do not replace it.
+API documentation belongs to the interface boundary because it describes the externally exposed HTTP contract.
 
 ---
 
-## 8. Timestamp Strategy
+### 6.2 Application Layer
 
-Two timestamps are persisted:
-
-```text
-created_at
-updated_at
-```
-
-### `created_at`
-
-- Set when the ticket is created.
-- Immutable after creation.
-- Generated by the application.
-- Stored as a UTC ISO 8601 timestamp.
-
-Example:
+Responsible for application use cases:
 
 ```text
-2026-08-17T10:00:00.000Z
+CreateTicket
+ListTickets
+GetTicket
+UpdateTicket
+DeleteTicket
 ```
 
-### `updated_at`
+The application layer coordinates:
 
-- Set when the ticket is created.
-- Updated whenever mutable ticket data is successfully persisted.
-- Generated by the application.
-- Stored as a UTC ISO 8601 timestamp.
+- domain behavior;
+- validation that belongs to use-case orchestration;
+- repository operations;
+- application-level error handling.
 
-Both timestamps are server-owned.
-
-The client cannot provide or modify these values through the API.
-
-Using an application-generated UTC ISO 8601 representation keeps the persistence representation aligned with the API representation and avoids dependence on SQLite-specific timestamp formatting.
+The application layer should not depend directly on Express request or response objects.
 
 ---
 
-## 9. Constraints
+### 6.3 Domain Layer
 
-The persistence layer should enforce structural and domain constraints such as:
+Responsible for the meaning and invariants of `Ticket`.
 
-```text
-PRIMARY KEY
-NOT NULL
-CHECK constraints
-```
+The domain owns:
 
-The database schema should therefore enforce at minimum:
+- Ticket entity semantics;
+- Ticket status;
+- Ticket priority;
+- domain invariants;
+- status validity without enforcing a strict transition matrix;
+- priority constraints while allowing client-provided priority values;
+- domain rules;
+- mutable versus immutable attributes.
 
-```sql
-PRIMARY KEY (id)
-
-NOT NULL:
-  title
-  description
-  status
-  priority
-  created_at
-  updated_at
-
-CHECK:
-  status IN ('open', 'in_progress', 'resolved', 'closed')
-
-CHECK:
-  priority IN ('low', 'medium', 'high')
-```
-
-Application/domain validation remains responsible for business-level validation such as meaningful text and request semantics.
-
-This creates two layers of protection:
-
-```text
-Request
-   ↓
-HTTP Validation
-   ↓
-Application / Domain Validation
-   ↓
-Repository
-   ↓
-Database Constraints
-```
-
-Database constraints act as a final persistence boundary rather than replacing domain validation.
+The domain layer must not depend on Express or a specific database technology.
 
 ---
 
-## 10. Index Strategy
+### 6.4 Persistence Boundary
 
-The API supports basic filtering by:
-
-```text
-status
-priority
-```
-
-The primary key index provided by `id` supports:
-
-```http
-GET /api/v1/tickets/:id
-```
-
-### Initial indexes
-
-```text
-PRIMARY KEY (id)
-INDEX tickets_status_idx (status)
-INDEX tickets_priority_idx (priority)
-```
-
-No additional indexes are required initially.
-
-### Rationale
-
-The challenge requires basic filtering but does not require high-volume query optimization.
-
-Additional indexes should only be introduced when supported by actual query requirements or measured performance needs.
-
----
-
-## 11. Filtering Support
-
-The API contract supports queries such as:
-
-```http
-GET /api/v1/tickets?status=open
-```
-
-```http
-GET /api/v1/tickets?priority=high
-```
-
-```http
-GET /api/v1/tickets?status=open&priority=high
-```
-
-When multiple filters are supplied, all supplied filters must be satisfied.
-
-The repository layer translates these filters into database query conditions.
-
-Conceptually:
-
-```text
-API Query
-   ↓
-ListTickets use case
-   ↓
-TicketRepository
-   ↓
-SQL WHERE conditions
-   ↓
-tickets
-```
-
-The API layer must not construct raw database queries directly.
-
-Repository queries must use parameterized values or an equivalent safe query mechanism.
-
----
-
-## 12. Repository-to-Database Mapping
-
-The repository abstraction separates the application layer
-from the SQLite persistence implementation.
+The application layer communicates with persistence through repository abstractions.
 
 Conceptually:
 
 ```text
 Application
     ↓
-TicketRepository interface
-    ↓
-SQLite TicketRepository implementation
-    ↓
-SQLite database
-```
-
-The repository is responsible for:
-
-- creating tickets;
-- retrieving a ticket by ID;
-- listing tickets;
-- applying supported filters;
-- updating mutable ticket fields;
-- deleting tickets;
-- mapping database records to domain/application representations.
-
-The domain layer must not depend on SQLite-specific APIs.
-
----
-
-## 13. CRUD Persistence Mapping
-
-### Create
-
-```text
-POST /api/v1/tickets
-        ↓
-CreateTicket
-        ↓
-Generate ID
-        ↓
-Set status = open
-        ↓
-Set createdAt / updatedAt
-        ↓
-INSERT INTO tickets
-```
-
-### List
-
-```text
-GET /api/v1/tickets
-        ↓
-ListTickets
-        ↓
 TicketRepository
-        ↓
-SELECT ... FROM tickets
-        ↓
-Optional status/priority filters
+    ↓
+Repository Implementation
+    ↓
+Database
 ```
 
-### Get
+The repository abstraction defines the persistence operations required by the application.
+
+The implementation details of the selected database remain outside the domain layer.
+
+---
+
+### 6.5 Persistence Implementation
+
+Responsible for:
+
+- database connection;
+- queries;
+- mapping database records to application/domain representations;
+- persistence operations;
+- migrations or schema initialization;
+- database-specific behavior.
+
+The persistence implementation must preserve the domain invariants.
+
+---
+
+## 7. Dependency Direction
+
+Dependencies should flow toward stable business/application abstractions rather than toward infrastructure details.
+
+Preferred direction:
 
 ```text
-GET /api/v1/tickets/:id
-        ↓
+HTTP
+  ↓
+Application
+  ↓
+Domain
+```
+
+and:
+
+```text
+Application
+  ↓
+Repository Abstraction
+  ↑
+Repository Implementation
+  ↓
+Database
+```
+
+The application should depend on a repository contract rather than directly importing a database client into use-case code.
+
+The domain should remain independent of:
+
+- ExpressJS;
+- the selected database;
+- ORM/query-builder APIs;
+- HTTP status codes.
+
+---
+
+## 8. Request Processing Flow
+
+A typical create request follows:
+
+```text
+Client
+  │
+  │ POST /api/v1/tickets
+  ▼
+Router
+  │
+  ▼
+Request Validation
+  │
+  ▼
+CreateTicket Use Case
+  │
+  ▼
+Ticket Domain Rules
+  │
+  ▼
+TicketRepository
+  │
+  ▼
+Database
+  │
+  ▼
+Application Result
+  │
+  ▼
+HTTP Response
+  │
+  ▼
+Client
+```
+
+A list request follows:
+
+```text
+Client
+  │
+  │ GET /api/v1/tickets?status=open&priority=high
+  ▼
+Router
+  │
+  ▼
+Query Validation
+  │
+  ▼
+ListTickets Use Case
+  │
+  ▼
+TicketRepository
+  │
+  ▼
+Database
+  │
+  ▼
+Application Result
+  │
+  ▼
+HTTP Response
+```
+
+API documentation is exposed independently from the business use-case flow but describes the same HTTP routes, request schemas, response schemas, and error behavior.
+
+---
+
+## 9. Project Structure
+
+The initial implementation structure is expected to follow these boundaries:
+
+```text
+src/problem5/
+├── interface/
+│   └── http/
+│       ├── routes/
+│       ├── controllers/
+│       ├── schemas/
+│       └── middleware/
+│
+├── application/
+│   ├── use-cases/
+│   └── ports/
+│
+├── domain/
+│   └── ticket/
+│
+├── infrastructure/
+│   └── persistence/
+│       ├── database/
+│       └── repositories/
+│
+└── shared/
+    ├── errors/
+    └── config/
+```
+
+This structure is a proposed implementation boundary.
+
+The exact file names and framework-specific organization may be adjusted during implementation if the resulting structure remains consistent with the architectural responsibilities.
+
+---
+
+## 10. Use-Case Boundary
+
+The initial application use cases are:
+
+```text
+CreateTicket
+ListTickets
 GetTicket
-        ↓
-SELECT ... FROM tickets WHERE id = ?
-```
-
-### Update
-
-```text
-PATCH /api/v1/tickets/:id
-        ↓
 UpdateTicket
-        ↓
-Validate mutable fields
-        ↓
-Update ticket
-        ↓
-Update updated_at
-```
-
-### Delete
-
-```text
-DELETE /api/v1/tickets/:id
-        ↓
 DeleteTicket
-        ↓
-DELETE FROM tickets WHERE id = ?
 ```
 
----
-
-## 14. Transaction Considerations
-
-The current CRUD operations are intentionally simple.
-
-Each individual persistence operation must be atomic.
-
-A multi-step transaction is only necessary when an operation contains multiple database changes that must succeed or fail together.
-
-The current domain contains no multi-entity workflow requiring complex transaction orchestration.
-
-Therefore:
-
-```text
-Single persistence operation
-        ↓
-Database atomicity
-```
-
-is sufficient for the current scope.
-
-Explicit transaction handling should remain inside the persistence boundary if a future operation requires multiple database changes to succeed or fail together.
-
-No distributed transaction mechanism is required.
-
----
-
-## 15. Schema Management
-
-The database schema should be created through a migration or deterministic schema initialization mechanism rather than manually configured by a developer.
-
-The repository should be reproducible from a clean checkout:
-
-```text
-git clone
-    ↓
-npm install
-    ↓
-database initialization / migration
-    ↓
-npm run dev
-```
-
-The exact migration tooling belongs to the implementation phase.
-
-This document defines the database contract, not the implementation-specific migration library.
-
----
-
-## 16. Error and Persistence Semantics
-
-The database layer must distinguish persistence outcomes from API concerns.
+Each use case should have a focused responsibility.
 
 For example:
 
 ```text
-Database record does not exist
-        ↓
-Repository returns "not found" result
-        ↓
-Application/use case interprets condition
-        ↓
-API maps it to 404 Not Found
-```
-
-The repository should not directly construct HTTP responses.
-
-Likewise:
-
-```text
-Database constraint failure
-        ↓
-Repository / infrastructure error
-        ↓
-Application error handling
-        ↓
-HTTP error response
-```
-
-This preserves the architecture boundary defined previously.
-
-Database-specific error details must not be exposed directly to API clients.
-
----
-
-## 17. Explicit Non-Goals
-
-The following are intentionally outside the database scope:
-
-- Multiple database technologies or a multi-database architecture.
-- Database replication.
-- Sharding.
-- Read replicas.
-- Distributed transactions.
-- Database clustering.
-- Redis caching.
-- Full-text search.
-- Complex reporting.
-- Audit-event storage.
-- Soft-delete history.
-- Multi-tenant persistence.
-- Separate user/account tables.
-- Ticket comments or attachments.
-
-These may be appropriate in a production system with different requirements, but they are not justified by the current challenge.
-
----
-
-## 18. Traceability
-
-### Discovery → Database
-
-The challenge requires:
-
-```text
-Simple database persistence
-```
-
-This document satisfies that requirement through SQLite persistence.
-
-The database choice is an engineering decision rather than a challenge requirement.
-
-### Domain → Database
-
-The domain defines:
-
-```text
-Ticket
-├── id
-├── title
-├── description
-├── status
-├── priority
-├── createdAt
-└── updatedAt
-```
-
-The persistence model represents the same attributes using database-oriented naming:
-
-```text
-Ticket
+CreateTicket
     ↓
-tickets
+validate application input
+    ↓
+create domain-valid Ticket
+    ↓
+persist Ticket
+    ↓
+return result
 ```
 
-Domain-constrained values are reinforced at the database boundary without moving database concerns into the domain model.
-
-### Architecture → Database
-
-The architecture defines the runtime and environment model as `local`, `dev`, and `prod`, with environment-specific persistence isolation.
-
-The architecture also defines a repository abstraction between the application and persistence layers.
-
-The SQLite implementation therefore remains behind:
-
-```text
-Repository Abstraction
-        ↓
-Persistence
-        ↓
-SQLite
-```
-
-### API Contract → Database
-
-The database supports the API contract's required operations:
-
-```text
-Create
-List
-Get
-Update
-Delete
-```
-
-and its basic filters:
-
-```text
-status
-priority
-```
-
-The persistence representation also preserves the API contract's server-owned identifiers and UTC timestamp semantics.
+The use cases should not contain Express-specific code.
 
 ---
 
-## 19. Database Design Summary
+## 11. Repository Boundary
 
-The final persistence design is intentionally small:
+The application layer requires a Ticket repository abstraction.
+
+Conceptually:
 
 ```text
-                     SQLite
-                        │
-                        ▼
-                   ┌─────────┐
-                   │ tickets │
-                   ├─────────┤
-                   │ id      │
-                   │ title   │
-                   │ desc.   │
-                   │ status  │
-                   │ priority│
-                   │ created │
-                   │ updated │
-                   └─────────┘
+TicketRepository
+
++ create()
++ findById()
++ findMany()
++ update()
++ delete()
 ```
 
-The key engineering decisions are:
+The exact interface signature is an implementation-level detail to be defined during execution planning.
 
-1. SQLite is sufficient for the challenge's simple persistence requirement.
-2. One `tickets` table is sufficient for the current domain.
-3. IDs and timestamps are server-owned.
-4. Timestamps use application-generated UTC ISO 8601 strings.
-5. `status` and `priority` remain domain-constrained.
-6. Database `CHECK` constraints reinforce supported status and priority values.
-7. `status` and `priority` receive indexes to support required filtering.
-8. Persistence is accessed through the repository abstraction.
-9. Individual persistence operations rely on database atomicity; explicit transactions are reserved for future multi-step operations.
-10. Database constraints complement, but do not replace, domain validation.
-11. Each environment uses isolated SQLite persistence, and containerized `dev` and `prod` environments require persistent storage.
-12. No production-scale infrastructure is introduced without a corresponding requirement.
+Filtering parameters required by `ListTickets` should be represented through application-level types rather than database-specific query objects.
 
 ---
 
-## 20. Next Phase
+## 12. Validation Strategy
 
-The stable engineering context is now:
+Validation occurs at appropriate boundaries.
+
+### HTTP Validation
+
+The HTTP layer validates:
+
+- request body shape;
+- query parameter shape;
+- parameter format;
+- basic input constraints.
+
+### Domain Validation
+
+The domain protects:
+
+- valid status values;
+- valid priority values;
+- required domain attributes;
+- immutable attributes;
+- initial status behavior;
+- absence of a strict status-transition matrix;
+- domain constraints on client-provided priority values.
+
+### Persistence Validation
+
+The persistence layer and database should provide appropriate constraints for:
+
+- required values;
+- identifier uniqueness;
+- supported enum values where practical;
+- timestamp consistency where practical.
+
+Validation must not rely exclusively on the HTTP layer because domain invariants must remain protected regardless of the caller.
+
+---
+
+## 13. Error Handling Strategy
+
+Errors should be handled according to their responsibility.
+
+Conceptually:
+
+```text
+Domain / Application Error
+          ↓
+Application Layer
+          ↓
+HTTP Error Mapping
+          ↓
+HTTP Response
+```
+
+Examples:
+
+| Condition                 | Expected API behavior       |
+| ------------------------- | --------------------------- |
+| Invalid request data      | `400 Bad Request`           |
+| Ticket does not exist     | `404 Not Found`             |
+| Unexpected server failure | `500 Internal Server Error` |
+
+The final error response schema and error codes are defined in the API contract.
+
+The OpenAPI specification should describe the externally observable error responses consistently with the API contract.
+
+Internal error details must not be exposed to clients unnecessarily.
+
+---
+
+## 14. Persistence Strategy
+
+The application will use a simple persistent database appropriate for the challenge.
+
+SQLite is the selected persistence technology, as defined by the database design.
+
+The selection is based on:
+
+- simplicity;
+- local development experience;
+- TypeScript/Node.js compatibility;
+- persistence requirements;
+- testing convenience;
+- implementation time.
+
+The persistence design must support:
+
+- Ticket creation;
+- Ticket retrieval;
+- Ticket listing;
+- status filtering;
+- priority filtering;
+- Ticket updates;
+- Ticket deletion.
+
+The application must keep database configuration isolated between the supported environments:
+
+```text
+local
+dev
+prod
+```
+
+An environment must not use the same SQLite database file as another environment.
+
+The exact database file locations and runtime-specific storage configuration are implementation-level details.
+
+---
+
+## 15. Transaction Boundary
+
+The initial CRUD operations do not require complex multi-step transactions.
+
+A single Ticket create or update should be persisted atomically by the database operation.
+
+No distributed transaction mechanism is required.
+
+If the selected persistence implementation requires an explicit transaction for a particular operation, that transaction should remain local to the persistence boundary.
+
+---
+
+## 16. Configuration and Runtime Strategy
+
+Environment-specific configuration should be supplied through environment variables or an equivalent configuration mechanism.
+
+Configuration may include:
+
+```text
+DATABASE_URL
+PORT
+NODE_ENV
+```
+
+The application should provide safe development defaults where appropriate, but production-sensitive values must not be hard-coded into source code.
+
+The final environment variable names will be defined during implementation setup.
+
+### Runtime Modes
+
+The application must support local development without requiring Docker:
+
+```text
+npm run dev
+```
+
+Docker is also supported as an execution mechanism for the application.
+
+The intended environment model is:
+
+```text
+local
+  └── local development
+      └── npm run dev
+      └── Docker may be used when useful
+
+dev
+  └── Docker-supported environment
+
+prod
+  └── Docker-supported environment
+```
+
+The application behavior and configuration must remain environment-aware without creating separate application implementations for each environment.
+
+Exact Dockerfile, Docker Compose configuration, container names, ports, volume definitions, and environment variable files are implementation-level concerns and must be defined during execution planning.
+
+---
+
+## 17. API Versioning
+
+The initial API will use:
+
+```text
+/api/v1/tickets
+```
+
+Versioning is kept at the API boundary.
+
+The domain and application layers should not depend on the URL version.
+
+This allows future API evolution without requiring the domain model to become aware of HTTP routing concerns.
+
+---
+
+## 18. API Documentation Strategy
+
+The backend will provide API documentation through:
+
+```text
+OpenAPI Specification
+        +
+Interactive Swagger UI
+```
+
+The API documentation is an engineering capability for making the HTTP contract discoverable and accessible to developers and reviewers.
+
+The OpenAPI specification should describe the implemented API contract, including where applicable:
+
+- API endpoints;
+- HTTP methods;
+- path parameters;
+- query parameters;
+- request bodies;
+- response schemas;
+- HTTP status codes;
+- error responses;
+- supported filtering parameters.
+
+Swagger UI should provide an interactive interface for viewing the OpenAPI specification.
+
+The documentation must remain consistent with the API contract and implemented behavior.
+
+The exact Swagger UI route and OpenAPI generation mechanism are implementation-level decisions to be defined during execution planning.
+
+---
+
+## 19. Testing Architecture
+
+Testing will be organized around behavior and architectural boundaries.
+
+### Domain Tests
+
+Verify:
+
+- Ticket invariants;
+- valid status values;
+- valid priority values;
+- initial status behavior;
+- immutable attributes.
+
+### Application Tests
+
+Verify:
+
+- create behavior;
+- list behavior;
+- filtering;
+- get behavior;
+- update behavior;
+- delete behavior;
+- missing Ticket behavior.
+
+### Integration Tests
+
+Verify:
+
+- repository behavior;
+- database persistence;
+- database filtering;
+- persistence error handling where practical.
+
+### API Tests
+
+Verify:
+
+- HTTP methods and routes;
+- request validation;
+- HTTP status codes;
+- response structure;
+- error mapping.
+
+### API Documentation Verification
+
+Verify where practical:
+
+- OpenAPI documentation is generated or exposed successfully;
+- Swagger UI is accessible;
+- documented endpoints correspond to the API contract;
+- documented request and response schemas remain consistent with the implemented API.
+
+The exact testing framework is an implementation-level detail to be selected during execution planning.
+
+---
+
+## 20. Security Baseline
+
+The challenge does not require authentication or authorization.
+
+The baseline security responsibilities are therefore focused on the API boundary:
+
+- validate all external input;
+- avoid exposing internal errors;
+- avoid hard-coded secrets;
+- use parameterized database operations or safe query mechanisms;
+- apply reasonable request-size limits;
+- keep dependencies reasonably current;
+- avoid returning unnecessary internal data.
+
+No authentication subsystem will be introduced unless a later requirement explicitly requires it.
+
+---
+
+## 21. Observability Baseline
+
+The service should provide sufficient logging for local development and basic troubleshooting.
+
+At minimum, the application should be able to identify:
+
+- application startup failures;
+- database connection failures;
+- unexpected request failures.
+
+Logging must not expose secrets or sensitive configuration values.
+
+A full centralized observability stack is out of scope for this challenge.
+
+---
+
+## 22. Scalability Considerations
+
+The expected workload does not justify distributed infrastructure.
+
+The initial architecture should therefore favor:
+
+```text
+Simple API Service
+        ↓
+Simple Persistent Database
+```
+
+The architecture should nevertheless avoid unnecessary coupling that would make future evolution difficult.
+
+Potential future scaling options, if requirements grow, could include:
+
+- database indexing;
+- connection pooling;
+- horizontal API instances;
+- caching;
+- asynchronous processing.
+
+These are future considerations, not implementation requirements for P5.
+
+---
+
+## 23. Explicit Non-Goals
+
+The architecture intentionally does not introduce:
+
+- microservices;
+- event-driven architecture;
+- message brokers;
+- distributed caching;
+- Kubernetes;
+- service mesh;
+- distributed transactions;
+- authentication servers;
+- authorization services;
+- external identity providers;
+- real-time WebSocket infrastructure;
+- centralized observability platforms.
+
+These technologies are not justified by the current challenge requirements.
+
+---
+
+## 24. Architecture Decision Summary
+
+| Decision                   | Status       | Rationale                                        |
+| -------------------------- | ------------ | ------------------------------------------------ |
+| ExpressJS                  | Confirmed    | Challenge requirement                            |
+| TypeScript                 | Confirmed    | Challenge requirement                            |
+| REST API                   | Selected     | Appropriate for CRUD interface                   |
+| Layered architecture       | Selected     | Clear responsibilities with limited complexity   |
+| Application use cases      | Selected     | Separates HTTP concerns from business operations |
+| Ticket domain boundary     | Confirmed    | Defined by domain model                          |
+| Repository abstraction     | Selected     | Isolates persistence from application logic      |
+| Simple database            | Confirmed    | Challenge requirement                            |
+| SQLite                     | Selected     | Simple persistent database appropriate for P5    |
+| `/api/v1` versioning       | Selected     | Provides a clear API boundary                    |
+| OpenAPI specification      | Selected     | Makes the API contract machine-readable          |
+| Swagger UI                 | Selected     | Provides interactive API documentation           |
+| Local development          | Selected     | Supports `npm run dev` without requiring Docker  |
+| Docker runtime             | Selected     | Supports reproducible environment execution      |
+| Environment isolation      | Selected     | Prevents local/dev/prod persistence overlap      |
+| Status transition matrix   | Not enforced | CRUD scope does not require workflow rules       |
+| Authentication             | Out of scope | Not required by challenge                        |
+| Microservices              | Out of scope | Not justified by challenge scope                 |
+| Distributed infrastructure | Out of scope | Not justified by challenge scope                 |
+
+---
+
+## 25. Traceability to Discovery, PRD, Domain, and API Contract
+
+| Architecture Decision      | Source                           |
+| -------------------------- | -------------------------------- |
+| ExpressJS backend          | Discovery `CR-01` / `FR-01`      |
+| TypeScript                 | Discovery `CR-02` / `FR-02`      |
+| CRUD use cases             | Discovery `FR-03` to `FR-07`     |
+| Basic filtering            | PRD / Discovery `FR-04`          |
+| Ticket as primary resource | PRD / Domain Section 2           |
+| Ticket invariants          | Domain Section 7                 |
+| Initial status `open`      | Domain `DR-04`                   |
+| Status transition policy   | Domain Section 6                 |
+| Status values              | Domain `DR-05`                   |
+| Priority values            | Domain `DR-06`                   |
+| Simple persistence         | Discovery `FR-08` / PRD          |
+| No authentication          | Discovery `A-04` / PRD           |
+| Single service             | Discovery `A-02`                 |
+| Proportional architecture  | Discovery Engineering Principles |
+| API documentation          | API Contract                     |
+| API versioning             | API Contract                     |
+| API error behavior         | API Contract                     |
+| SQLite persistence         | Database Design                  |
+| Environment isolation      | Database Design                  |
+| Local / dev / prod runtime | Approved engineering context     |
+| Docker support             | Approved engineering context     |
+
+Architecture decisions in this document must not contradict the approved discovery or domain model.
+
+---
+
+## 26. Architecture Decision Record
+
+The architecture establishes the following overall structure:
+
+```text
+                    Client
+                       │
+                       ▼
+              ┌────────────────┐
+              │  HTTP / API    │
+              │    Layer       │
+              └───────┬────────┘
+                      │
+                      ▼
+              ┌────────────────┐
+              │  Application   │
+              │    Layer       │
+              │                │
+              │ CreateTicket   │
+              │ ListTickets    │
+              │ GetTicket      │
+              │ UpdateTicket   │
+              │ DeleteTicket   │
+              └───────┬────────┘
+                      │
+                      ▼
+              ┌────────────────┐
+              │  Domain Layer  │
+              │    Ticket      │
+              └───────┬────────┘
+                      │
+                      ▼
+              ┌────────────────┐
+              │   Repository   │
+              │   Abstraction  │
+              └───────┬────────┘
+                      │
+                      ▼
+              ┌────────────────┐
+              │  Persistence   │
+              │ Implementation │
+              └───────┬────────┘
+                      │
+                      ▼
+              ┌────────────────┐
+              │    Database    │
+              └────────────────┘
+```
+
+The architecture deliberately keeps the system as a single service while maintaining boundaries that support testing and future evolution.
+
+The same application architecture is used across the supported environments:
+
+```text
+local
+dev
+prod
+```
+
+with environment-specific configuration and persistence isolation.
+
+---
+
+## 27. Next Phase
+
+The stable engineering context for Problem 5 consists of:
 
 ```text
 Discovery
-    ↓
+   ↓
 PRD
-    ↓
+   ↓
 Domain
-    ↓
+   ↓
 Architecture
-    ↓
+   ↓
 API Contract
-    ↓
+   ↓
 Database Design
 ```
 
-The next activity is Claude Code / AI engineering setup and execution planning.
+Once these context documents are approved and internally consistent, the project moves into execution planning.
 
-Planning is treated as an execution artifact derived from this approved context rather than as a permanent context document.
+The next phase is:
+
+```text
+Stable Context
+      ↓
+Implementation Planning
+      ↓
+Human Approval
+      ↓
+Implementation
+      ↓
+Testing
+      ↓
+Code Review
+```
+
+Implementation planning and implementation are **execution activities**, not additional stable-context documents.
+
+The implementation plan should consume the approved context rather than redefine product requirements, domain rules, API behavior, architecture boundaries, or database decisions.
+
+If an execution-time discovery reveals a conflict with the approved context, implementation should stop and escalate the conflict for human resolution rather than silently changing the stable context.
