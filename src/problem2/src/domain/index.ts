@@ -1,6 +1,13 @@
 export type { Result } from "./result";
 export { ok, err } from "./result";
 
+/**
+ * decimal.js is confined to the Domain layer; this re-export is the only
+ * sanctioned way for Application/Infrastructure to construct or type Decimal
+ * values, so no other layer needs its own "decimal.js" import.
+ */
+export { default as Decimal } from "decimal.js";
+
 export type { DomainErrorCode } from "./errors";
 export { DomainError } from "./errors";
 
@@ -35,6 +42,8 @@ export {
 
 export type { ValidateSwapInput, SwapValidation } from "./swap/validateSwap";
 export { validateSwap } from "./swap/validateSwap";
+
+export { parseAmount } from "./swap/parseAmount";
 
 export type { ReversedSwapInput } from "./swap/reverseSwap";
 export { reverseSwap } from "./swap/reverseSwap";
