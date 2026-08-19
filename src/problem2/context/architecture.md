@@ -91,7 +91,7 @@ receive amount calculation
 minimum received calculation
 price normalization
 swap validation
-balance mutation
+balance transition logic
 reverse-swap business rules
 ```
 
@@ -263,7 +263,7 @@ Docker
 ```text
 pricing algorithms
 swap validation
-balance mutation
+balance transition logic
 execution rules
 ```
 
@@ -294,8 +294,8 @@ Swap validation
 Reverse swap
 Review snapshot
 Execution
-Balance mutation
-Transaction identity
+Balance transition
+Transaction identity / transaction result semantics
 Domain errors
 ```
 
@@ -520,8 +520,7 @@ execution status
 ```
 
 Zustand stores the current client representation of simulated balances.
-It does not own balance business rules or balance mutation logic. Balance validation
-and mutation remain domain responsibilities; the resulting balance state is then
+It does not own balance business rules or balance transition logic. Balance validation and balance transition calculation remain domain responsibilities; the resulting balance state is then
 reflected in the client store for presentation and subsequent application flows.
 
 Only state that must be shared across components should become global state.
@@ -646,7 +645,7 @@ executeSwap(reviewedSnapshot)
        ↓
 Domain Execution
        ↓
-Balance Mutation
+Balance Transition
        ↓
 Execution Result
        ↓
@@ -1209,7 +1208,7 @@ invalid review
 ```text
 successful execution
 failed execution
-balance mutation
+balance transition
 duplicate execution prevention
 transaction identifier
 ```
@@ -1617,7 +1616,7 @@ Application Command
     ↓
 Domain executeSwap(snapshot)
     ↓
-Balance Mutation
+Balance Transition
     ↓
 Transaction Identifier
     ↓
@@ -1650,7 +1649,45 @@ The same architectural boundaries apply regardless of runtime.
 
 ---
 
-# 46. Definition of Done — Architecture
+# 46. UI Design Reference
+
+The frontend implementation uses the exported Claude Design artifact as
+the primary visual and interaction reference.
+
+Reference:
+
+design/claude-design/Currency Swap.dc.html
+
+The design artifact is used to guide:
+
+- layout;
+- visual hierarchy;
+- spacing;
+- typography;
+- colors;
+- component composition;
+- interaction states;
+- modal presentation;
+- asset selector presentation.
+
+The design reference does not define:
+
+- business rules;
+- domain behavior;
+- application boundaries;
+- state ownership;
+- infrastructure behavior.
+
+Those responsibilities remain governed by `prd.md`, `domain.md`,
+and this architecture document.
+
+If the design conflicts with an approved product, domain, or
+architectural requirement, the conflict must be reported rather than
+silently resolved.
+
+---
+
+# 47. Definition of Done — Architecture
 
 Architecture implementation is considered complete when:
 
@@ -1678,7 +1715,7 @@ Architecture implementation is considered complete when:
 
 ---
 
-# 47. Context Traceability
+# 48. Context Traceability
 
 ```text
 discovery.md
@@ -1689,7 +1726,13 @@ domain.md
       ↓
 architecture.md
       ↓
-implementation
+AI Engineering Setup
+      ↓
+Implementation Plan
+      ↓
+Implementation
+      ↓
+Testing / QA
 ```
 
 Architecture decisions are derived from:
@@ -1702,17 +1745,24 @@ Architecture must not introduce product behavior that is not supported by those 
 
 ---
 
-# 48. Architecture Status
+# 49. Architecture Status
 
 ```text
-Discovery        ✅ FROZEN
-PRD              ✅ FROZEN
-Domain           ✅ FROZEN
-Architecture     ✅ FROZEN
-Implementation   ⏳ NEXT
-Testing          ⏳ IMPLEMENTATION PHASE
+Discovery             ✅ FROZEN
+PRD                   ✅ FROZEN
+Domain                ✅ FROZEN
+Architecture          ✅ FROZEN
+AI Engineering Setup  ⏳ NEXT
+Implementation Plan   ⏳ AFTER AI SETUP
+Implementation        ⏳ AFTER IMPLEMENTATION PLAN
+Testing / QA          ⏳ IMPLEMENTATION PHASE
 ```
 
-The next artifact after architecture is the implementation plan/code structure.
+The next artifact after architecture is the AI engineering setup.
 
-The implementation phase must follow the architecture contract rather than redesigning the architecture during coding.
+The AI engineering setup will define the project-level AI instructions,
+agent responsibilities, reusable skills, context-loading rules, and
+implementation workflow.
+
+The implementation plan will be created after the AI engineering setup
+is established.
