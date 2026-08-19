@@ -9,7 +9,21 @@ export { ok, err } from "./result";
 export { default as Decimal } from "decimal.js";
 
 export type { DomainErrorCode } from "./errors";
-export { DomainError } from "./errors";
+export {
+  DomainError,
+  invalidAmount,
+  amountExceedsBalance,
+  missingSourceAsset,
+  missingDestinationAsset,
+  sameAssetSwap,
+  missingSourcePrice,
+  missingDestinationPrice,
+  quoteUnavailable,
+  invalidReview,
+  invalidReviewSnapshot,
+  executionInProgress,
+  executionFailed,
+} from "./errors";
 
 export type { PriceRecord } from "./price/priceRecord";
 export type { NormalizedPrice } from "./price/normalizedPrice";
