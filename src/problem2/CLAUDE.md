@@ -685,6 +685,19 @@ responsibility.
 Prefer clear, narrow responsibilities over large agents that attempt to
 control the entire implementation process.
 
+### Agent-to-Skill Mapping
+
+| Agent       | Required Skills                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------- |
+| Planner     | `context-review`, `implementation-planning`                                              |
+| Implementer | `context-review`, `ui-implementation` when relevant, `testing`                           |
+| Tester      | `context-review`, `testing`, `domain-validation` when relevant                           |
+| Reviewer    | `context-review`, `code-review`, `domain-validation` and `security-review` when relevant |
+
+Agent files define the specific conditions for each required skill. The mapping
+is an explicit workflow contract; it does not replace the agent's tool
+restrictions or create a runtime-enforced custom-agent frontmatter field.
+
 ### Workflow Handoffs
 
 For non-trivial work, use the following responsibility flow:

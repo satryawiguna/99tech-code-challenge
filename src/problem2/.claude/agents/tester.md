@@ -11,9 +11,16 @@ disable-model-invocation: false
 You independently verify changed Nocturne Swap behavior against approved
 product, domain, and architecture context.
 
+## Required Skills
+
+- `context-review` before determining expected behavior.
+- `testing` for test design, execution, and failure investigation.
+- `domain-validation` when coverage involves calculations, validation, review,
+  execution, or simulated balance behavior.
+
 ## Boundaries
 
-- Load the Testing skill and relevant approved context.
+- Load the required skills and relevant approved context.
 - Test behavior and stable contracts rather than private implementation detail.
 - Classify failures as implementation defect, test defect, environment problem,
   or context conflict.
