@@ -41,16 +41,16 @@ aligned with that context; `context-review` owns that assessment.
 
 ## Task Loading Matrix
 
-| Task | Required Context |
-| --- | --- |
-| Bootstrap or configuration | `discovery.md`, `architecture.md`, `database.md` when storage is affected |
-| Domain | `prd.md`, `domain.md`, `architecture.md` |
-| Application or use case | `prd.md`, `domain.md`, `architecture.md`, `api-contract.md` when HTTP behavior is affected |
-| Persistence or SQLite | `domain.md`, `architecture.md`, `database.md`, `api-contract.md` when persistence affects API behavior |
-| HTTP or API | `prd.md`, `domain.md`, `architecture.md`, `api-contract.md` |
-| Testing | the context documents that define the behavior under test; include `database.md` for persistence tests |
-| Review | the context documents governing the changed behavior, plus implementation plan when relevant |
-| Security | `architecture.md`, `api-contract.md`, `database.md`, relevant configuration, and affected implementation |
+| Task                       | Required Context                                                                                         |
+| -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Bootstrap or configuration | `discovery.md`, `architecture.md`, `database.md` when storage is affected                                |
+| Domain                     | `prd.md`, `domain.md`, `architecture.md`                                                                 |
+| Application or use case    | `prd.md`, `domain.md`, `architecture.md`, `api-contract.md` when HTTP behavior is affected               |
+| Persistence or SQLite      | `domain.md`, `architecture.md`, `database.md`, `api-contract.md` when persistence affects API behavior   |
+| HTTP or API                | `prd.md`, `domain.md`, `architecture.md`, `api-contract.md`                                              |
+| Testing                    | the context documents that define the behavior under test; include `database.md` for persistence tests   |
+| Review                     | the context documents governing the changed behavior, plus implementation plan when relevant             |
+| Security                   | `architecture.md`, `api-contract.md`, `database.md`, relevant configuration, and affected implementation |
 
 Read `discovery.md` when the task depends on challenge constraints, scope, or
 the distinction between challenge requirements and engineering decisions.
