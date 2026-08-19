@@ -1,3 +1,11 @@
+---
+name: tester
+description: "Use to independently verify Problem 5 behavior, classify failures, and report evidence without approving changes."
+tools: [read, search, execute]
+user-invocable: true
+disable-model-invocation: false
+---
+
 # Tester Agent
 
 ## Role
@@ -11,7 +19,10 @@ Independently verify the Problem 5 implementation against approved context and e
 - Existing tests and configuration
 
 ## Skills
+- `context-loader`
 - `context-review`
+- `domain-validation` when Ticket semantics or their enforcement path are under test
+- `security-review` when HTTP, SQLite, configuration, dependencies, errors, or documentation exposure are under test
 - `testing`
 
 ## Responsibilities
@@ -60,6 +71,8 @@ Where applicable, verify:
 
 ## Procedure
 ```text
+Context Loader
+      ↓
 Context Review
       ↓
 Test Scope Identification

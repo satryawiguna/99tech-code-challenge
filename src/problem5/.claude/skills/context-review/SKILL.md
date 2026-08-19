@@ -1,3 +1,10 @@
+---
+name: context-review
+description: "Use after context-loader to determine whether a Problem 5 task is aligned, ambiguous, conflicting, or out of scope."
+argument-hint: "Describe the task or planned change to assess"
+user-invocable: true
+---
+
 # Context Review Skill
 
 ## Purpose
@@ -25,7 +32,8 @@ Use it before making decisions that could affect externally observable behavior 
 
 ## Required Context
 
-The approved context is:
+Use `context-loader` first to select the minimum governing documents. The
+approved context is:
 
 ```text
 src/problem5/context/
@@ -37,7 +45,8 @@ src/problem5/context/
 └── database.md
 ```
 
-Read the documents in dependency order when the task requires broad context:
+Read the documents in dependency order when `context-loader` identifies that
+the task requires broad context:
 
 ```text
 Discovery
@@ -53,7 +62,8 @@ API Contract
 Database Design
 ```
 
-For a narrowly scoped task, read the minimum relevant documents, but do not skip an upstream document when its decision affects the task.
+For a narrowly scoped task, use the source set selected by `context-loader`,
+but do not skip an upstream document when its decision affects the task.
 
 ---
 

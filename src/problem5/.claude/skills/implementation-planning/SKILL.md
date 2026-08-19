@@ -1,3 +1,10 @@
+---
+name: implementation-planning
+description: "Use after context review to translate approved Problem 5 decisions into an ordered implementation plan."
+argument-hint: "Describe the implementation objective to plan"
+user-invocable: true
+---
+
 # Implementation Planning Skill
 
 ## Purpose
@@ -35,7 +42,7 @@ src/problem5/context/
 └── database.md
 ```
 
-Use:
+Use `context-loader`, then:
 
 ```text
 context-review

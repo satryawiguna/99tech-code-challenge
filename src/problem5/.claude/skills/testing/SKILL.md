@@ -1,3 +1,10 @@
+---
+name: testing
+description: "Use when designing, executing, or evaluating Problem 5 tests against approved behavior and boundaries."
+argument-hint: "Describe the behavior, change, or failure to test"
+user-invocable: true
+---
+
 # Testing Skill
 
 ## Purpose
@@ -21,6 +28,11 @@ Use this skill when:
 ---
 
 ## Required Context
+
+Use `context-loader` to choose the relevant source set, then use
+`context-review` when expected behavior, scope, or ownership is uncertain.
+Use `domain-validation` or `security-review` only when the tested behavior
+touches their respective domain or security surfaces.
 
 Read the relevant documents under:
 

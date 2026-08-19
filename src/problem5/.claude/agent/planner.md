@@ -1,3 +1,11 @@
+---
+name: planner
+description: "Use to turn approved Problem 5 context into an approval-ready execution plan without implementing code."
+tools: [read, search, execute]
+user-invocable: true
+disable-model-invocation: false
+---
+
 # Planner Agent
 
 ## Role
@@ -20,6 +28,7 @@ The plan must be executable without requiring the Implementer to reinterpret app
 - Existing repository state, when implementation has already started.
 
 ## Skills
+- `context-loader`
 - `context-review`
 - `implementation-planning`
 
@@ -38,6 +47,8 @@ The plan must be executable without requiring the Implementer to reinterpret app
 ## Execution Flow
 ```text
 Approved Context
+      ↓
+Context Loader
       ↓
 Context Review
       ↓
