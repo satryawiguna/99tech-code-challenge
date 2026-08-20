@@ -36,6 +36,7 @@ export function SwapReviewDialog() {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isRevealDelayed, setIsRevealDelayed] = useState(false);
   const open = reviewSnapshot !== null;
+  const showPending = isRevealDelayed || executionPhase === "processing";
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -48,7 +49,14 @@ export function SwapReviewDialog() {
     }
   }, [open]);
 
-  function handleCancel() {
+  function handleCancel(event?: { preventDefault: () => void }) {
+    // FR-022: duplicate/early dismissal must not be allowed to look like the
+    // in-flight swap was cancelled — execution has already completed behind
+    // the cosmetic reveal delay, so Escape is a no-op until it settles.
+    if (showPending) {
+      event?.preventDefault();
+      return;
+    }
     setReviewSnapshot(null);
   }
 
@@ -73,7 +81,6 @@ export function SwapReviewDialog() {
     );
   }
 
-  const showPending = isRevealDelayed || executionPhase === "processing";
   const showDone = !showPending && executionPhase === "success";
   const showFailed = !showPending && executionPhase === "failed";
   const showConfirm = !showPending && !showDone && !showFailed;

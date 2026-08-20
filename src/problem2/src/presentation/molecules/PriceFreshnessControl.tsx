@@ -1,54 +1,43 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { formatDatasetTimestamp, formatLastCheckedAge } from "@/shared/utils";
+import { useEffect, useState } from "react";
+import { formatLastCheckedAge } from "@/shared/utils";
 import { Button } from "../atoms/Button";
 
 export interface PriceFreshnessControlProps {
+  /** Umur data sumber (FR-018) — ditampilkan sebagai tooltip, bukan counter utama. */
   readonly datasetTimestamp: number | null;
+  /** Kapan browser terakhir berhasil fetch — clock yang reset tiap refresh sukses. */
+  readonly lastCheckedAt: number | null;
   readonly isRefreshing: boolean;
   readonly onRefresh: () => void;
 }
 
 /**
- * FR-017/FR-018: manual refresh + source-data freshness, positioned in the
- * header per the design baseline.
+ * FR-017/FR-018: manual refresh + freshness indicator di header (sesuai desain).
  *
- * Two distinct ages are shown, deliberately not merged into one:
- * - "Provided price data · Xy ago" — the age of the underlying price
- *   records themselves (domain.md §17). This never resets on refresh: a
- *   static challenge snapshot does not get any newer just because the
- *   browser re-fetched it. Collapsing this into a resetting counter would
- *   visually imply the market data is live, which FR-018/AC-015 explicitly
- *   forbid.
- * - "Refreshed Xs ago" — purely a client-side "last checked" indicator.
- *   This is honest to reset and count up on every refresh, since it only
- *   claims "this browser asked the server N seconds ago," not that the
- *   price data itself is fresh.
- *
- * Both tick in real time via a 1s clock; neither ever re-fetches or
- * re-derives price data on its own.
+ * Baris terlihat adalah last-checked clock ("Updated just now" / "Updated Xs ago")
+ * yang tick tiap detik dan reset tiap refresh sukses — sama dengan counter
+ * `(now - updated)` di desain. Umur data sumber tetap dipertahankan sebagai
+ * tooltip agar FR-018 terpenuhi tanpa mengklaim ini live market stream.
  */
 export function PriceFreshnessControl({
   datasetTimestamp,
+  lastCheckedAt,
   isRefreshing,
   onRefresh,
 }: PriceFreshnessControlProps) {
   const [now, setNow] = useState(() => Date.now());
-  const [lastCheckedAt, setLastCheckedAt] = useState(() => Date.now());
-  const wasRefreshingRef = useRef(isRefreshing);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (wasRefreshingRef.current && !isRefreshing) {
-      setLastCheckedAt(Date.now());
-    }
-    wasRefreshingRef.current = isRefreshing;
-  }, [isRefreshing]);
+  const title =
+    datasetTimestamp === null
+      ? "Provided price data"
+      : `Provided price data · source ${new Date(datasetTimestamp).toISOString()}`;
 
   return (
     <div
@@ -60,7 +49,7 @@ export function PriceFreshnessControl({
         color: "var(--muted-2)",
       }}
     >
-      <span>{formatLastCheckedAge(lastCheckedAt, now)}</span>
+      <span title={title}>{formatLastCheckedAge(lastCheckedAt, now)}</span>
       <Button
         variant="ghost"
         onClick={onRefresh}

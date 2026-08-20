@@ -98,6 +98,33 @@ describe("SwapReviewDialog", () => {
     }
   });
 
+  it("ignores Escape while the pending reveal is in progress, so the dialog cannot be dismissed mid-'processing'", () => {
+    vi.useFakeTimers();
+    try {
+      seedReviewedSwap();
+      render(<SwapReviewDialog />);
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Confirm swap" }));
+      });
+      expect(screen.getByText("Submitting swap")).toBeInTheDocument();
+
+      act(() => {
+        fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+      });
+
+      expect(screen.getByText("Submitting swap")).toBeInTheDocument();
+      expect(useSwapStore.getState().reviewSnapshot).not.toBeNull();
+
+      act(() => {
+        vi.advanceTimersByTime(1200);
+      });
+      expect(screen.getByText("Swap complete")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("renders the failed state when executionPhase is 'failed', and Close clears the review", () => {
     // The domain-level ExecutionInProgress path (duplicate confirmation) is
     // already covered at the swapActions level (Phase 4) — this only checks

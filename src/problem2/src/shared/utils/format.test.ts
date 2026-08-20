@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { Decimal } from "@/domain";
-import { formatDatasetTimestamp, formatPrice, formatTokenAmount, formatUsd } from "./format";
+import {
+  formatDatasetTimestamp,
+  formatLastCheckedAge,
+  formatPrice,
+  formatTokenAmount,
+  formatUsd,
+} from "./format";
 
 describe("formatTokenAmount", () => {
   it("scales precision with magnitude", () => {
@@ -73,5 +79,22 @@ describe("formatDatasetTimestamp", () => {
 
   it("handles no data yet without claiming freshness", () => {
     expect(formatDatasetTimestamp(null)).toBe("Provided price data");
+  });
+});
+
+describe("formatLastCheckedAge", () => {
+  it("shows 'Updated just now' immediately after the last check", () => {
+    const now = Date.parse("2026-08-20T00:00:00.000Z");
+    expect(formatLastCheckedAge(now, now)).toBe("Updated just now");
+  });
+
+  it("increments in seconds, then minutes", () => {
+    const now = Date.parse("2026-08-20T00:00:00.000Z");
+    expect(formatLastCheckedAge(now - 10_000, now)).toBe("Updated 10s ago");
+    expect(formatLastCheckedAge(now - 60_000, now)).toBe("Updated 1m ago");
+  });
+
+  it("handles no check yet without claiming freshness", () => {
+    expect(formatLastCheckedAge(null)).toBe("Updated");
   });
 });
