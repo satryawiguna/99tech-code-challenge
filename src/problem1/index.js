@@ -8,6 +8,11 @@ var sum_to_n_a = function (n) {
   return sum;
 };
 
+var sum_to_n_b = function (n) {
+  return (n * (n + 1)) / 2;
+};
+
 module.exports = {
   sum_to_n_a,
+  sum_to_n_b,
 };
