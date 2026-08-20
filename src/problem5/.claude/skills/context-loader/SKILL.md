@@ -49,7 +49,7 @@ aligned with that context; `context-review` owns that assessment.
 | Persistence or SQLite      | `domain.md`, `architecture.md`, `database.md`, `api-contract.md` when persistence affects API behavior   |
 | HTTP or API                | `prd.md`, `domain.md`, `architecture.md`, `api-contract.md`                                              |
 | Testing                    | the context documents that define the behavior under test; include `database.md` for persistence tests   |
-| Review                     | the context documents governing the changed behavior, plus implementation plan when relevant             |
+| Review                     | the context documents governing the changed behavior, plus approved implementation draft when relevant   |
 | Security                   | `architecture.md`, `api-contract.md`, `database.md`, relevant configuration, and affected implementation |
 
 Read `discovery.md` when the task depends on challenge constraints, scope, or

@@ -20,7 +20,7 @@ This skill ensures that AI agents understand the established decisions and do no
 Use this skill when:
 
 - starting a new implementation task;
-- creating or reviewing an implementation plan;
+- creating or reviewing an implementation draft;
 - reviewing tests;
 - reviewing code;
 - investigating a potential implementation conflict;
@@ -72,7 +72,7 @@ but do not skip an upstream document when its decision affects the task.
 - current task or request;
 - relevant source code, if implementation already exists;
 - approved context documents;
-- existing implementation plan, if one exists.
+- existing implementation draft, if available.
 
 ---
 

@@ -14,10 +14,7 @@ Translate the approved Problem 5 engineering context into a concrete execution p
 
 ## Primary Objective
 
-Produce an actionable:
-`planning/implementation-plan.md`
-
-The plan must be executable without requiring the Implementer to reinterpret approved engineering decisions.
+Produce a concise, approval-ready implementation draft in chat. The draft must be executable without requiring the Implementer to reinterpret approved engineering decisions.
 
 ## Required Inputs
 
@@ -64,7 +61,7 @@ Implementation Decomposition
       ↓
 Dependency Analysis
       ↓
-Execution Plan
+Implementation Draft
       ↓
 Human Approval
 ```
@@ -106,24 +103,19 @@ Resume Planning
 
 ## Output
 
-Create:
-`planning/implementation-plan.md`
+Present a concise implementation draft in chat containing:
 
-It should contain:
+1. Context reviewed
+2. Scope
+3. Ordered steps
+4. Target modules
+5. Validation plan
+6. Assumptions / risks
 
-1. Objective
-2. Context References
-3. Current Repository State
-4. Implementation Strategy
-5. Phases
-6. Tasks
-7. Dependencies
-8. Acceptance Criteria
-9. Testing Strategy
-10. Risks / Escalations
+End the draft with `Awaiting human approval`. Do not write or edit a plan file.
 
 ## Completion Criteria
 
-The Planner is complete when relevant context has been reviewed, repository state inspected, work decomposed, dependencies and acceptance criteria defined, tests identified, and no unresolved context conflict remains.
+The Planner is complete when relevant context has been reviewed, repository state inspected, work decomposed, dependencies and acceptance criteria defined, tests identified, the draft has been presented for approval, and no unresolved context conflict remains.
 
 The Planner does not begin implementation.

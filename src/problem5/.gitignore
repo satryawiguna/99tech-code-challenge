@@ -13,3 +13,5 @@ data/*.sqlite-wal
 data/*.sqlite-shm
 
 *.log
+
+.mcp.json

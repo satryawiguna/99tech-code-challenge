@@ -59,7 +59,7 @@ context/
 Also review, when available:
 
 ```text
-planning/implementation-plan.md
+human-approved implementation draft
 ```
 
 and:

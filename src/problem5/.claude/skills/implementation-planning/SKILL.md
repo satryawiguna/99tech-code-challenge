@@ -9,9 +9,9 @@ user-invocable: true
 
 ## Purpose
 
-Translate the approved Problem 5 engineering context into a concrete, ordered implementation plan.
+Translate the approved Problem 5 engineering context into a concise, ordered implementation draft presented for human approval before implementation.
 
-The plan describes how the approved system will be built without redefining the product, domain, architecture, API contract, or database design.
+The draft describes how the approved system will be built without redefining the product, domain, architecture, API contract, or database design.
 
 ---
 
@@ -177,9 +177,9 @@ HTTP behavior
 → API/integration tests
 ```
 
-### 8. Produce the Plan
+### 8. Present the Draft
 
-The final plan should be actionable by an implementer without requiring architectural reinterpretation.
+Present a concise, ordered draft for human approval. Do not write or edit a plan file.
 
 ---
 
@@ -198,68 +198,43 @@ The final plan should be actionable by an implementer without requiring architec
 
 ---
 
-## Recommended Plan Structure
+## Draft Format
 
-```markdown
-# Implementation Plan
+Keep the draft concise and directly actionable:
 
-## 1. Objective
-
-## 2. Context References
-
-## 3. Implementation Strategy
-
-## 4. Phases
-
-### Phase 1 — Project Bootstrap
-
-### Phase 2 — Domain
-
-### Phase 3 — Application
-
-### Phase 4 — Persistence
-
-### Phase 5 — API
-
-### Phase 6 — Testing
-
-### Phase 7 — Documentation
-
-## 5. Dependencies
-
-## 6. Acceptance Criteria
-
-## 7. Risks / Escalations
+```text
+Context reviewed
+Scope
+Ordered steps
+Target modules
+Validation plan
+Assumptions / risks
 ```
 
-The exact phases may differ if the repository already contains implementation.
+End with `Awaiting human approval`.
 
 ---
 
 ## Output
 
-Produce:
+Present a concise, approval-ready draft in chat:
 
 ```text
-planning/implementation-plan.md
+Context reviewed
+Scope
+Ordered steps
+Target modules
+Validation plan
+Assumptions / risks
 ```
 
-The plan should contain:
-
-- implementation phases;
-- ordered tasks;
-- dependencies;
-- affected modules/files;
-- acceptance criteria;
-- test requirements;
-- known implementation-level decisions;
-- risks or escalations.
+End with `Awaiting human approval`. Do not write or edit a plan file.
 
 ---
 
 ## Validation
 
-Before finalizing the plan:
+Before presenting the draft:
 
 - all relevant context was reviewed;
 - every task maps to an approved requirement or implementation need;

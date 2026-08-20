@@ -94,17 +94,37 @@ npm run test:e2e         # end-to-end tests (playwright)
 
 ## Docker
 
+Three environment-specific services:
+
+| Service     | Dockerfile target | Port | Purpose                                               |
+| ----------- | ----------------- | ---- | ----------------------------------------------------- |
+| `app-local` | `dev`             | 3000 | Hot-reload development, bind-mounted source           |
+| `app-dev`   | `runner`          | 3001 | Reproducible non-production runtime, standalone build |
+| `app-prod`  | `runner`          | 3002 | Reproducible production runtime, standalone build     |
+
 ```bash
-docker compose up            # dev target, hot reload, http://localhost:3000
-docker compose build app     # rebuild the image
-docker compose down          # stop and remove the container
+docker compose up app-local            # dev target, hot reload, http://localhost:3000
+docker compose build app-dev && docker compose up app-dev    # http://localhost:3001
+docker compose build app-prod && docker compose up app-prod  # http://localhost:3002
+docker compose down                    # stop and remove all containers
 ```
 
-Override the price feed for a container run with:
+`app-local` reads its config live at container runtime, so editing `.env`
+or restarting the container picks up changes immediately.
+
+`app-dev`/`app-prod` **do not** — `NEXT_PUBLIC_APP_ENV`/`NEXT_PUBLIC_PRICE_FEED_URL`
+are inlined into the client bundle at Docker build time (Next.js only
+inlines `NEXT_PUBLIC_*` vars at build, not at container start). Changing
+`NEXT_PUBLIC_PRICE_FEED_URL` and running `docker compose up app-dev` alone
+reuses the existing image untouched — you must explicitly rebuild:
 
 ```bash
-NEXT_PUBLIC_PRICE_FEED_URL=https://example.test/prices.json docker compose up
+NEXT_PUBLIC_PRICE_FEED_URL=https://example.test/prices.json docker compose build app-dev
+docker compose up app-dev
 ```
+
+`NEXT_PUBLIC_APP_ENV` for `app-dev`/`app-prod` is fixed to `dev`/`prod`
+respectively and isn't meant to be overridden per run.
 
 ## Architecture overview
 

@@ -64,7 +64,7 @@ when the test scope depends on product requirements or challenge constraints.
 
 - implementation code;
 - approved context;
-- implementation plan, if available;
+- human-approved implementation draft, if available;
 - existing tests;
 - test configuration;
 - reported bug or expected behavior.
