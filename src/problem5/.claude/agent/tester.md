@@ -16,7 +16,7 @@ Independently verify the Problem 5 implementation against approved context and e
 
 - `CLAUDE.md`
 - All approved files under `context/`
-- `planning/implementation-plan.md`, when available
+- Human-approved implementation draft, when available
 - Implementation code
 - Existing tests and configuration
 

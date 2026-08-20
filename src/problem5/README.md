@@ -1,6 +1,6 @@
 # Problem 5 — Support Ticket Management API
 
-A CRUD backend for managing support tickets, built with ExpressJS and TypeScript, persisted with SQLite. See [context/](context/) for the full approved product, domain, architecture, API, and database design, and [planning/implementation-plan.md](planning/implementation-plan.md) for the execution plan this implementation follows.
+A CRUD backend for managing support tickets, built with ExpressJS and TypeScript, persisted with SQLite. See [context/](context/) for the full approved product, domain, architecture, API, and database design. Implementation work is planned as an approval-ready draft and executed against that approved context.
 
 ## Prerequisites
 
@@ -17,11 +17,11 @@ npm install
 
 Configuration is environment-variable driven; nothing environment-specific is hard-coded.
 
-| Variable       | Required | Description                                             |
-| -------------- | -------- | --------------------------------------------------------- |
-| `NODE_ENV`     | No (defaults to `local`) | One of `local`, `dev`, `prod`.               |
-| `PORT`         | No (defaults to `3000`)  | HTTP port the server listens on.             |
-| `DATABASE_URL` | Yes      | Filesystem path to the SQLite database file for this environment. |
+| Variable       | Required                 | Description                                                       |
+| -------------- | ------------------------ | ----------------------------------------------------------------- |
+| `NODE_ENV`     | No (defaults to `local`) | One of `local`, `dev`, `prod`.                                    |
+| `PORT`         | No (defaults to `3000`)  | HTTP port the server listens on.                                  |
+| `DATABASE_URL` | Yes                      | Filesystem path to the SQLite database file for this environment. |
 
 Copy [`.env.example`](.env.example) to `.env` for local development:
 
@@ -58,13 +58,13 @@ Runs the full automated suite (domain, application, persistence/integration, API
 
 The API is versioned under `/api/v1`. Full request/response contracts are defined in [context/api-contract.md](context/api-contract.md).
 
-| Method   | Endpoint              | Purpose          |
-| -------- | ---------------------- | ---------------- |
-| `POST`   | `/api/v1/tickets`      | Create a Ticket  |
-| `GET`    | `/api/v1/tickets`      | List Tickets (optional `status`, `priority` filters, combined with AND) |
-| `GET`    | `/api/v1/tickets/:id`  | Get a Ticket     |
-| `PATCH`  | `/api/v1/tickets/:id`  | Partially update a Ticket |
-| `DELETE` | `/api/v1/tickets/:id`  | Delete a Ticket  |
+| Method   | Endpoint              | Purpose                                                                 |
+| -------- | --------------------- | ----------------------------------------------------------------------- |
+| `POST`   | `/api/v1/tickets`     | Create a Ticket                                                         |
+| `GET`    | `/api/v1/tickets`     | List Tickets (optional `status`, `priority` filters, combined with AND) |
+| `GET`    | `/api/v1/tickets/:id` | Get a Ticket                                                            |
+| `PATCH`  | `/api/v1/tickets/:id` | Partially update a Ticket                                               |
+| `DELETE` | `/api/v1/tickets/:id` | Delete a Ticket                                                         |
 
 Ticket `status`: `open` (initial, server-set) `| in_progress | resolved | closed`.
 Ticket `priority`: `low | medium | high`.

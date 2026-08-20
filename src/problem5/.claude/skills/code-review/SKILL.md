@@ -60,7 +60,7 @@ SQLite, configuration, dependencies, error handling, or exposed documentation.
 - code diff;
 - changed files;
 - test results;
-- implementation plan, if available;
+- human-approved implementation draft, if available;
 - approved context;
 - project configuration where relevant.
 

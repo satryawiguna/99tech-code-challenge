@@ -18,15 +18,7 @@ The Implementer owns production implementation and implementation-level engineer
 
 ## Primary Objective
 
-Convert the approved:
-
-```text
-context/
-+
-planning/implementation-plan.md
-```
-
-into working implementation that satisfies the approved engineering context.
+Convert the approved context plus the human-approved implementation draft into working implementation that satisfies the approved engineering context.
 
 The Implementer is responsible for implementation correctness at the developer level. Independent quality verification belongs to the Tester and Reviewer.
 
@@ -52,11 +44,7 @@ context/
 └── database.md
 ```
 
-Approved execution plan:
-
-```text
-planning/implementation-plan.md
-```
+Human-approved implementation draft (from the Planner). A historical plan file, if present, may be used as reference only.
 
 The Implementer must inspect the current repository before modifying code.
 
@@ -81,7 +69,7 @@ The `testing` skill is used for implementation-level verification and test creat
 
 The Implementer must:
 
-1. Review relevant context and the approved implementation plan.
+1. Review relevant context and the human-approved implementation draft.
 2. Inspect existing code before modifying it.
 3. Implement tasks in dependency order.
 4. Follow documented architectural boundaries.
@@ -98,7 +86,7 @@ The Implementer must:
 ## Execution Flow
 
 ```text
-Approved Plan
+Approved Draft
       ↓
 Context Loader
       ↓
@@ -203,7 +191,7 @@ and preserve the documented:
 
 Do not introduce features or infrastructure outside approved scope.
 
-Prefer the simplest solution that satisfies the approved context and implementation plan.
+Prefer the simplest solution that satisfies the approved context and approved draft.
 
 ---
 
@@ -272,7 +260,7 @@ Do not silently modify:
 - API contract;
 - database design.
 
-If the implementation plan is incomplete but the required work remains within approved context, report the plan gap and request an authorized plan adjustment before proceeding with material scope changes.
+If the approved draft is incomplete but the required work remains within approved context, report the gap and request an authorized plan adjustment before proceeding with material scope changes.
 
 ---
 

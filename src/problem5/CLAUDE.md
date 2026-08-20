@@ -190,6 +190,8 @@ Stable Context
     ↓
 Execution Planning
     ↓
+Human Approval
+    ↓
 Implementation
     ↓
 Testing
@@ -207,7 +209,7 @@ An implementation plan may define:
 - acceptance checks;
 - test requirements.
 
-The implementation plan must not redefine the approved product or architecture.
+The Planner presents this plan as a concise draft in chat for human approval rather than persisting it as a permanent file. The draft must not redefine the approved product or architecture.
 
 If planning discovers a genuine design problem, return to the relevant context document and obtain a deliberate decision before implementation.
 
