@@ -1,0 +1,416 @@
+/*
+ * Design tokens and component classes ported from the Claude Design
+ * reference (design/claude-design/_ds/.../styles.css) — reimplemented here
+ * rather than imported, since design/ is a reference artifact, not a
+ * shipped dependency.
+ */
+
+:root {
+  --color-bg: #161826;
+  --color-surface: #232532;
+  --color-text: #e9e9ed;
+  --color-accent: #9184d9;
+  --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+
+  --color-neutral-800: #3f424d;
+  --color-neutral-900: #292b31;
+
+  --color-accent-100: #f5f4ff;
+  --color-accent-200: #e7e5fe;
+  --color-accent-300: #d2cefd;
+  --color-accent-700: #5d5294;
+  --color-accent-800: #423a6a;
+  --color-accent-900: #2b2741;
+
+  --muted-1: #cfd3e5;
+  --muted-2: #b2b6ca;
+  --muted-3: #9397ab;
+
+  --font-heading: var(--font-inter), system-ui, sans-serif;
+  --font-heading-weight: 500;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+
+  --space-1: 2.8px;
+  --space-2: 5.6px;
+  --space-3: 8.4px;
+  --space-4: 11.2px;
+  --space-6: 16.8px;
+  --space-8: 22.4px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --shadow-sm: 0 0 0 1px #3f424d;
+  --shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0, 0, 0, 0.65);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  background:
+    radial-gradient(1100px 520px at 12% -10%, #1e2038 0%, transparent 62%),
+    radial-gradient(700px 420px at 92% 8%, #1b1d31 0%, transparent 60%), var(--color-bg);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0 0 var(--space-2);
+}
+
+p {
+  margin: 0 0 var(--space-3);
+}
+
+.text-muted {
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* — buttons — */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: var(--space-2) calc(var(--space-3) * 1.2);
+  border-radius: var(--radius-md);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+.btn-primary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+.btn-secondary {
+  border-color: var(--color-divider);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+.btn-ghost {
+  color: var(--color-accent);
+  padding-inline: var(--space-1);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+.btn-block {
+  width: 100%;
+  margin-top: var(--space-2);
+  min-height: 46px;
+  font-size: 15px;
+}
+
+/* — inputs — */
+.input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+  caret-color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+}
+.input:hover {
+  border-color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.input:focus-visible {
+  border-color: var(--color-accent);
+  outline-offset: 0;
+}
+.amount-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: clamp(25px, 6.5vw, 34px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--color-text);
+  caret-color: var(--color-accent);
+}
+.amount-input:focus-visible {
+  outline: none;
+}
+
+/* — segmented control — */
+.seg {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+}
+.seg-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.seg-opt input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.seg-opt + .seg-opt {
+  border-left: 1px solid var(--color-divider);
+}
+.seg-opt:has(input:checked) {
+  color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+.seg-opt:not(:has(input:checked)):hover {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+.seg-opt:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* — cards — */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.elev-md {
+  box-shadow: var(--shadow-md);
+}
+.elev-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+.amount-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  padding: 14px 16px 12px;
+}
+
+/* Asset-picker and portfolio-panel rows: hover reads like a soft "active" state. */
+.list-row {
+  background: transparent;
+  transition: background 120ms ease;
+}
+.list-row:hover {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+.list-row:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* — token icons — */
+.token-icon {
+  position: relative;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-neutral-800);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.token-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* — tags — */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+.tag-outline {
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* — notice / error banner — */
+.notice {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-900);
+  box-shadow: inset 2px 0 0 var(--color-accent);
+  font-size: 12.5px;
+  color: var(--color-accent-200);
+}
+
+/* — dialog — */
+/* Uses the native <dialog> element's own top-layer, not a manual backdrop div. */
+dialog::backdrop {
+  background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
+  backdrop-filter: blur(2px);
+}
+/*
+ * `display` is scoped to `[open]` only: an author-stylesheet `.dialog { display: flex }`
+ * would otherwise unconditionally override the UA stylesheet's
+ * `dialog:not([open]) { display: none }` (author rules always beat UA rules
+ * regardless of specificity), leaving the dialog visible even when closed.
+ *
+ * `border`/`outline`/`color` are also reset explicitly: the UA stylesheet's
+ * `dialog { color: CanvasText; border: solid; }` defaults otherwise show
+ * through wherever this author stylesheet doesn't declare its own value —
+ * a visible dark/black frame and black text on descendants that don't set
+ * their own `color`.
+ */
+.dialog {
+  width: min(420px, 100%);
+  max-height: min(560px, 86vh);
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border: none;
+  outline: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+.dialog[open] {
+  display: flex;
+}
+.dialog-title {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 18px;
+}
+.dialog-body {
+  font-size: 14px;
+  opacity: 0.85;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.dialog-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+}
+.dialog-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+}
+/* Thin, dark-themed scrollbar for the asset list, instead of the OS-default scrollbar. */
+.dialog-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-neutral-800) transparent;
+}
+.dialog-list::-webkit-scrollbar {
+  width: 8px;
+}
+.dialog-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dialog-list::-webkit-scrollbar-thumb {
+  background-color: var(--color-neutral-800);
+  border-radius: 999px;
+}
+.dialog-list::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--color-neutral-800) 70%, var(--color-text));
+}
+
+/* — spinner — */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  display: inline-block;
+  border-radius: 50%;
+  border: 2px solid var(--color-neutral-800);
+  border-top-color: var(--color-accent);
+  animation: spin 900ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.8s;
+  }
+}

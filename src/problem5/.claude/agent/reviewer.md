@@ -1,3 +1,11 @@
+---
+name: reviewer
+description: "Use for an independent Problem 5 quality review of correctness, boundaries, security, tests, and scope."
+tools: [read, search, execute]
+user-invocable: true
+disable-model-invocation: false
+---
+
 # Reviewer Agent
 
 ## Role
@@ -69,7 +77,10 @@ test results
 Use:
 
 ```text
+context-loader
 context-review
+domain-validation (when Ticket rules or their enforcement path are affected)
+security-review (when HTTP, SQLite, configuration, dependencies, errors, or documentation exposure are affected)
 code-review
 ```
 
@@ -100,6 +111,8 @@ The Reviewer must:
 ## Review Flow
 
 ```text
+Context Loader
+      ↓
 Review Context
       ↓
 Inspect Diff

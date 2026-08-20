@@ -1,3 +1,10 @@
+---
+name: code-review
+description: "Use after implementation and evidence are available to perform an integrated Problem 5 correctness and quality review."
+argument-hint: "Describe the diff or implementation slice to review"
+user-invocable: true
+---
+
 # Code Review Skill
 
 ## Purpose
@@ -41,7 +48,10 @@ api-contract.md
 database.md
 ```
 
-Use `context-review` before performing the review.
+Use `context-loader` followed by `context-review` before performing the review.
+Use `domain-validation` when the change affects Ticket semantics or their
+enforcement path. Use `security-review` when the change affects HTTP input,
+SQLite, configuration, dependencies, error handling, or exposed documentation.
 
 ---
 
@@ -80,6 +90,9 @@ Check that implementation matches:
 - API contract;
 - database design;
 - security baseline.
+
+Incorporate focused domain or security findings when those specialized reviews
+are relevant. Do not duplicate them merely as workflow ceremony.
 
 ### 3. Review Correctness
 

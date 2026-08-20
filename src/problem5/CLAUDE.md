@@ -469,7 +469,40 @@ Every agent or skill introduced into the workflow must have a clear reason to ex
 
 ---
 
-## 13. Change Protocol
+## 13. Skill Lifecycle
+
+Skills are reusable procedures with separate responsibilities. Their use must
+be proportional to the task rather than a mandatory ceremony.
+
+For non-trivial work, start with:
+
+```text
+context-loader
+    ↓
+context-review
+```
+
+`context-loader` classifies the task and selects the minimum approved context.
+`context-review` determines whether the task is aligned, ambiguous, conflicting,
+or out of scope. The loader does not resolve conflicts, and the review does not
+replace the loader.
+
+Use focused validation only when relevant:
+
+- `domain-validation` for Ticket semantics, invariants, or their enforcement path;
+- `security-review` for HTTP input/error handling, SQLite/schema/query work,
+  configuration, dependencies, request limits, or exposed API documentation;
+- `testing` for behavior verification;
+- `code-review` for an integrated final review;
+- `implementation-planning` after context review and before material unplanned work.
+
+Agents must report any unresolved context conflict to the human engineer. No
+skill may silently amend approved context or override another document's
+decision ownership.
+
+---
+
+## 14. Change Protocol
 
 When modifying code:
 
@@ -501,7 +534,7 @@ Never silently change context to make an implementation pass.
 
 ---
 
-## 14. Git and Engineering Milestones
+## 15. Git and Engineering Milestones
 
 Prefer meaningful engineering milestones over commits for every small change.
 
@@ -542,7 +575,7 @@ Review the staged diff and ensure that unrelated changes are not included.
 
 ---
 
-## 15. Definition of Done
+## 16. Definition of Done
 
 A Problem 5 implementation is not complete merely because the server runs.
 
@@ -564,7 +597,7 @@ Before declaring completion, verify:
 
 ---
 
-## 16. Final Rule
+## 17. Final Rule
 
 When uncertain, follow this priority:
 

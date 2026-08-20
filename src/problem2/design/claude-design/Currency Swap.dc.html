@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-8f1bc08a-94f7-4e5f-9cec-2a0758d405b1/styles.css">
+<script src="_ds/nocturne-8f1bc08a-94f7-4e5f-9cec-2a0758d405b1/_ds_bundle.js"></script>
+<style>
+  body {
+    margin: 0;
+    background: radial-gradient(1100px 520px at 12% -10%, #1e2038 0%, transparent 62%), radial-gradient(700px 420px at 92% 8%, #1b1d31 0%, transparent 60%), var(--color-bg);
+    --muted-1: var(--color-neutral-300);
+    --muted-2: var(--color-neutral-400);
+    --muted-3: var(--color-neutral-500);
+    --hover-soft: var(--color-neutral-900);
+    --hover-accent: var(--color-accent-900);
+    --line-fade: linear-gradient(to right, transparent, var(--color-divider) 40px, var(--color-divider) calc(100% - 40px), transparent);
+    --line-fade-r: linear-gradient(to right, var(--color-divider), transparent);
+    --pad-x: clamp(14px, 4vw, 24px);
+    --gap-main: clamp(20px, 4vw, 32px);
+    --amt-size: clamp(25px, 6.5vw, 34px);
+    --col-form: min(100%, 280px);
+    --col-side: min(100%, 220px);
+    --dlg-w: min(420px, 100%);
+    --dlg-h: min(560px, 86vh);
+    --ease-spin: transform 700ms ease-out;
+  }
+  @keyframes noct-spin { to { transform: rotate(360deg); } }
+  @keyframes noct-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes noct-pop { 0% { opacity: 0; transform: scale(0.6) rotate(-25deg); } 70% { transform: scale(1.12) rotate(0deg); } 100% { opacity: 1; transform: scale(1); } }
+  @keyframes noct-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;color:var(--color-text);font-family:var(--font-body)">
+
+  <header class="nav" style="max-width:960px;margin:0 auto;padding:20px var(--pad-x) 4px;gap:12px;flex-wrap:wrap">
+    <div class="nav-brand" style="display:flex;align-items:center;gap:10px;margin-right:auto">
+      <span style="width:22px;height:22px;border-radius:7px;border:1px solid var(--color-accent);display:inline-flex;align-items:center;justify-content:center;color:var(--color-accent);font-size:12px">◇</span>
+      <span>Nocturne</span>
+      <span class="tag tag-outline" style="font-size:10px;letter-spacing:0.08em">SWAP</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted-2)">
+      <span style="animation:{{ ratesAnim }}">{{ updatedLabel }}</span>
+      <button class="btn btn-ghost" style="font-size:12px;padding:4px 8px" onClick="{{ onRefresh }}" title="Refresh rates">↻ Refresh</button>
+    </div>
+  </header>
+
+  <main style="max-width:960px;margin:0 auto;padding:20px var(--pad-x) 64px;display:flex;flex-wrap:wrap;gap:var(--gap-main);align-items:flex-start">
+
+    <section style="flex:1 1 340px;min-width:var(--col-form);max-width:560px">
+      <h3 style="margin:0 0 4px">Swap assets</h3>
+      <p class="text-muted" style="font-size:13px;max-width:44ch">Live prices from the market feed. Amounts are quoted at the mid rate, less fees.</p>
+
+      <div class="card elev-md" style="margin-top:18px;padding:var(--space-6);border-radius:var(--radius-lg);gap:0">
+
+        <div style="background:var(--color-bg);border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:14px 16px 12px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--muted-1)">You pay</span>
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted-2)">
+              <span>Balance {{ payBalance }}</span>
+              <button class="btn btn-ghost" style="font-size:11px;padding:2px 6px" onClick="{{ onHalf }}">HALF</button>
+              <button class="btn btn-ghost" style="font-size:11px;padding:2px 6px" onClick="{{ onMax }}">MAX</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+            <input inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Amount to pay" placeholder="0.0" value="{{ amount }}" onChange="{{ onAmount }}" style="flex:1;min-width:0;background:transparent;border:0;padding:0;font-family:var(--font-heading);font-weight:500;font-size:var(--amt-size);letter-spacing:-0.02em;line-height:1.1;color:var(--color-text);caret-color:var(--color-accent)">
+            <button class="btn btn-secondary" onClick="{{ onOpenPay }}" onMouseEnter="{{ onPayEnter }}" onMouseLeave="{{ onHoverOut }}" style="flex:none;gap:8px;padding:6px 10px;border-radius:999px">
+              <span style="position:relative;width:24px;height:24px;flex:none;border-radius:50%;background:var(--color-neutral-800);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--color-accent-300)">
+                <span>{{ payMono }}</span>
+                <img ref="{{ payIconRef }}" alt="" style="position:absolute;inset:0;width:24px;height:24px;border-radius:50%;transform:rotateY({{ paySpin }}deg);transition:var(--ease-spin)">
+              </span>
+              <span>{{ paySymbol }}</span>
+              <span style="opacity:0.5;font-size:11px">▾</span>
+            </button>
+          </div>
+          <div style="font-size:12px;margin-top:4px;color:var(--muted-3)">{{ payUsd }}</div>
+        </div>
+
+        <div style="position:relative;height:34px">
+          <div style="position:absolute;inset:auto 0 auto 0;top:17px;height:1px;background:var(--line-fade)"></div>
+          <button class="btn btn-icon btn-secondary" onClick="{{ onFlip }}" title="Switch direction" aria-label="Switch direction" style="position:absolute;left:50%;top:0;transform:translateX(-50%);width:34px;height:34px;background:var(--color-surface);border-radius:999px;color:var(--color-accent);border-color:var(--color-accent-700)" style-hover="background:var(--hover-accent)"><span style="display:inline-block;transform:rotate({{ flipDeg }}deg);transition:transform 420ms ease-out">⇅</span></button>
+        </div>
+
+        <div style="background:var(--color-bg);border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:14px 16px 12px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--muted-1)">You receive</span>
+            <span style="font-size:12px;color:var(--muted-2)">Balance {{ recvBalance }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+            <div style="flex:1;min-width:0;font-family:var(--font-heading);font-weight:500;font-size:var(--amt-size);letter-spacing:-0.02em;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:{{ recvColor }}">{{ recvAmount }}</div>
+            <button class="btn btn-secondary" onClick="{{ onOpenRecv }}" onMouseEnter="{{ onRecvEnter }}" onMouseLeave="{{ onHoverOut }}" style="flex:none;gap:8px;padding:6px 10px;border-radius:999px">
+              <span style="position:relative;width:24px;height:24px;flex:none;border-radius:50%;background:var(--color-neutral-800);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--color-accent-300)">
+                <span>{{ recvMono }}</span>
+                <img ref="{{ recvIconRef }}" alt="" style="position:absolute;inset:0;width:24px;height:24px;border-radius:50%;transform:rotateY({{ recvSpin }}deg);transition:var(--ease-spin)">
+              </span>
+              <span>{{ recvSymbol }}</span>
+              <span style="opacity:0.5;font-size:11px">▾</span>
+            </button>
+          </div>
+          <div style="font-size:12px;margin-top:4px;color:var(--muted-3)">{{ recvUsd }}</div>
+        </div>
+
+        <sc-if value="{{ notice }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:9px 12px;border-radius:var(--radius-md);background:var(--color-accent-900);box-shadow:inset 2px 0 0 var(--color-accent);font-size:12.5px;color:var(--color-accent-200)">
+            <span style="line-height:1.4">⚠</span>
+            <span style="line-height:1.4">{{ notice }}</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasQuote }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:7px;font-size:12.5px">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+              <span style="color:var(--muted-2)">Rate</span>
+              <button class="btn btn-ghost" onClick="{{ onInvert }}" style="font-size:12.5px;padding:1px 5px;color:var(--color-text)" title="Invert">{{ rateText }} <span style="opacity:0.45">⇄</span></button>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px">
+              <span style="color:var(--muted-2)">Minimum received</span>
+              <span>{{ minReceived }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px">
+              <span style="color:var(--muted-2)">Price impact</span>
+              <span style="color:{{ impactColor }}">{{ impactText }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px">
+              <span style="color:var(--muted-2)">Network fee</span>
+              <span>{{ feeText }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:8px 12px;align-items:center;flex-wrap:wrap;margin-top:3px">
+              <span style="color:var(--muted-2)">Max slippage</span>
+              <div class="seg" style="border-radius:999px">
+                <label class="seg-opt" style="padding:4px 10px;font-size:12px;border-radius:999px 0 0 999px"><input type="radio" name="slip" checked="{{ slip01 }}" onChange="{{ onSlip01 }}"><span>0.1%</span></label>
+                <label class="seg-opt" style="padding:4px 10px;font-size:12px"><input type="radio" name="slip" checked="{{ slip05 }}" onChange="{{ onSlip05 }}"><span>0.5%</span></label>
+                <label class="seg-opt" style="padding:4px 10px;font-size:12px;border-radius:0 999px 999px 0"><input type="radio" name="slip" checked="{{ slip10 }}" onChange="{{ onSlip10 }}"><span>1%</span></label>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <button class="btn btn-primary btn-block" disabled="{{ ctaDisabled }}" onClick="{{ onSubmit }}" style="margin-top:18px;min-height:46px;font-size:15px;border-radius:var(--radius-md)">{{ ctaLabel }}</button>
+      </div>
+    </section>
+
+    <aside style="flex:1 1 240px;min-width:var(--col-side);max-width:300px;display:flex;flex-direction:column;gap:22px;padding-top:6px">
+      <div>
+        <h6 style="margin:0 0 2px;color:var(--muted-2)">Your balances</h6>
+        <div style="font-family:var(--font-heading);font-weight:500;font-size:22px;letter-spacing:-0.02em;margin:6px 0 10px">{{ portfolioTotal }}</div>
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{ holdings }}" as="h" hint-placeholder-count="5">
+            <button onClick="{{ h.onPick }}" onMouseEnter="{{ h.onEnter }}" onMouseLeave="{{ onHoverOut }}" title="Pay with this asset" style="display:flex;align-items:center;gap:10px;width:100%;padding:8px 2px;background:transparent;border:0;border-radius:var(--radius-sm);cursor:pointer;color:inherit;font:inherit;text-align:left" style-hover="background:var(--hover-soft)">
+              <span style="position:relative;width:26px;height:26px;flex:none;border-radius:50%;background:var(--color-neutral-800);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--color-accent-300)">
+                <span>{{ h.mono }}</span>
+                <img ref="{{ h.iconRef }}" alt="" style="position:absolute;inset:0;width:26px;height:26px;border-radius:50%;transform:rotateY({{ h.spin }}deg);transition:var(--ease-spin)">
+              </span>
+              <span style="flex:1;min-width:0">
+                <span style="display:block;font-size:13px">{{ h.symbol }}</span>
+                <span style="display:block;font-size:11px;color:var(--muted-3)">{{ h.amount }}</span>
+              </span>
+              <span style="font-size:12.5px;font-variant-numeric:tabular-nums">{{ h.usd }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="height:1px;background:var(--line-fade-r)"></div>
+      <p class="text-muted" style="font-size:11.5px;line-height:1.5;margin:0">Assets without a listed price can't be quoted and are hidden from selection. Fees settle in the asset you pay.</p>
+    </aside>
+  </main>
+
+  <sc-if value="{{ pickerOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop" style="backdrop-filter:blur(2px);z-index:20">
+      <div class="dialog elev-lg" style="width:var(--dlg-w);max-height:var(--dlg-h);padding:var(--space-6);gap:var(--space-3);animation:noct-rise 140ms ease-out">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span class="dialog-title" style="font-size:18px">{{ pickerTitle }}</span>
+          <button class="btn btn-secondary btn-icon" onClick="{{ onClosePicker }}" aria-label="Close" style="width:28px;height:28px;border-radius:999px">✕</button>
+        </div>
+        <input class="input" autofocus="{{ true }}" placeholder="Search name or symbol" value="{{ query }}" onChange="{{ onQuery }}" aria-label="Search assets">
+        <div style="overflow:auto;margin:0 calc(var(--space-3) * -1);padding:0 var(--space-3)">
+          <sc-for list="{{ pickerList }}" as="t" hint-placeholder-count="7">
+            <button onClick="{{ t.onPick }}" onMouseEnter="{{ t.onEnter }}" onMouseLeave="{{ onHoverOut }}" disabled="{{ t.disabled }}" style="display:flex;align-items:center;gap:11px;width:100%;padding:9px 8px;background:transparent;border:0;border-radius:var(--radius-md);cursor:pointer;color:inherit;font:inherit;text-align:left;box-shadow:{{ t.ring }}" style-hover="background:var(--hover-soft)">
+              <span style="position:relative;width:30px;height:30px;flex:none;border-radius:50%;background:var(--color-neutral-800);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:var(--color-accent-300)">
+                <span>{{ t.mono }}</span>
+                <img ref="{{ t.iconRef }}" alt="" style="position:absolute;inset:0;width:30px;height:30px;border-radius:50%;transform:rotateY({{ t.spin }}deg);transition:var(--ease-spin)">
+              </span>
+              <span style="flex:1;min-width:0">
+                <span style="display:block;font-size:13.5px">{{ t.symbol }}</span>
+                <span style="display:block;font-size:11.5px;color:var(--muted-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.name }}</span>
+              </span>
+              <span style="text-align:right">
+                <span style="display:block;font-size:12.5px;font-variant-numeric:tabular-nums">{{ t.price }}</span>
+                <span style="display:block;font-size:11px;color:var(--muted-3)">{{ t.balance }}</span>
+              </span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+            <p class="text-muted" style="font-size:12.5px;padding:14px 8px;margin:0">No priced asset matches “{{ query }}”.</p>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ dialogOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop" style="backdrop-filter:blur(2px);z-index:30">
+      <div class="dialog elev-lg" style="padding:var(--space-6);animation:noct-rise 140ms ease-out">
+        <sc-if value="{{ isConfirm }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+            <span class="dialog-title" style="font-size:19px">Confirm swap</span>
+            <div style="display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:14px 16px;background:var(--color-bg);border:1px solid var(--color-divider);border-radius:var(--radius-md)">
+              <span style="flex:1 1 40%;min-width:0">
+                <span style="display:block;font-size:11px;color:var(--muted-2)">Pay</span>
+                <span style="display:block;font-family:var(--font-heading);font-size:19px;margin-top:2px">{{ payLine }}</span>
+                <span style="display:block;font-size:11.5px;color:var(--muted-3)">{{ payUsd }}</span>
+              </span>
+              <span style="color:var(--color-accent);font-size:16px">→</span>
+              <span style="flex:1 1 40%;min-width:0;text-align:right">
+                <span style="display:block;font-size:11px;color:var(--muted-2)">Receive</span>
+                <span style="display:block;font-family:var(--font-heading);font-size:19px;margin-top:2px">{{ recvLine }}</span>
+                <span style="display:block;font-size:11.5px;color:var(--muted-3)">{{ recvUsd }}</span>
+              </span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px">
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted-2)">Rate</span><span>{{ rateText }}</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted-2)">Minimum received</span><span>{{ minReceived }}</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted-2)">Network fee</span><span>{{ feeText }}</span></div>
+            </div>
+            <div class="dialog-actions">
+              <button class="btn btn-secondary" onClick="{{ onCancel }}">Cancel</button>
+              <button class="btn btn-primary" onClick="{{ onConfirm }}">Confirm swap</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isPending }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 0 10px">
+            <span style="width:34px;height:34px;border-radius:50%;border:2px solid var(--color-neutral-800);border-top-color:var(--color-accent);animation:noct-spin 900ms linear infinite"></span>
+            <span style="font-family:var(--font-heading);font-size:17px">Submitting swap</span>
+            <span class="text-muted" style="font-size:12.5px">{{ payLine }} → {{ recvLine }}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+            <div style="display:flex;align-items:center;gap:11px">
+              <span style="width:30px;height:30px;flex:none;border-radius:50%;border:1px solid var(--color-accent);color:var(--color-accent);display:inline-flex;align-items:center;justify-content:center;animation:noct-pop 420ms ease-out both">✓</span>
+              <span class="dialog-title" style="font-size:19px">Swap complete</span>
+            </div>
+            <p class="dialog-body" style="margin:0">You swapped {{ doneFrom }} for {{ doneTo }}. Balances have been updated.</p>
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:9px 12px;background:var(--color-bg);border:1px solid var(--color-divider);border-radius:var(--radius-md)">
+              <span style="color:var(--muted-2)">Transaction</span>
+              <span style="font-variant-numeric:tabular-nums">{{ txHash }}</span>
+            </div>
+            <div class="dialog-actions">
+              <button class="btn btn-primary" onClick="{{ onCancel }}">New swap</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1000,&quot;height&quot;:760},&quot;defaultSlippage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;0.1&quot;,&quot;0.5&quot;,&quot;1&quot;],&quot;default&quot;:&quot;0.5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;requireConfirm&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  seed = [
+    ["ETH", "Ethereum", 1645.9337, 4.2183],
+    ["USDC", "USD Coin", 0.989832, 12480.55],
+    ["ATOM", "Cosmos Hub", 7.1573, 328.4207],
+    ["OSMO", "Osmosis", 0.3772, 1204.9],
+    ["SWTH", "Switcheo", 0.0040398, 152000],
+    ["LUNA", "Terra", 0.4095564, 890.12],
+    ["GMX", "GMX", 36.345114, 12.504],
+    ["USD", "US Dollar", 1, 2500],
+    ["bNEO", "Bridged NEO", 7.1282679, 0],
+    ["BUSD", "Binance USD", 0.99998369, 0],
+    ["axlUSDC", "Axelar USDC", 0.989832, 0],
+    ["USC", "USC", 0.994, 0],
+    ["OKB", "OKB", 42.9756286, 0],
+    ["OKT", "OKT Chain", 13.5615, 0],
+    ["KUJI", "Kujira", 0.675573, 0],
+    ["EVMOS", "Evmos", 0.0624696, 0],
+    ["IRIS", "IRISnet", 0.0177262, 0],
+    ["STRD", "Stride", 0.6092388, 0],
+    ["IBCX", "IBC Index", 41.2681136, 0],
+    ["LSI", "Liquid Staking Index", 67.2937761, 0],
+    ["BLUR", "Blur", 0.2081153, 0],
+    ["stATOM", "Stride Staked ATOM", 8.428177, 0],
+    ["stOSMO", "Stride Staked OSMO", 0.431318, 0],
+    ["stLUNA", "Stride Staked LUNA", 0.44232, 0],
+    ["stEVMOS", "Stride Staked EVMOS", 0.0727671, 0],
+    ["ampLUNA", "Amplified LUNA", 0.4954859, 0],
+    ["rATOM", "Staked ATOM", 10.2509181, 0],
+    ["rSWTH", "Reserved SWTH", 0.00408, 0],
+    ["WBTC", "Wrapped Bitcoin", 26002.822, 0.3418],
+    ["wstETH", "Wrapped Staked ETH", 1872.25797, 0],
+    ["YieldUSD", "Yield USD", 1.0290848, 0],
+    ["ZIL", "Zilliqa", 0.0165181, 0]
+  ];
+
+  feedAlias = { stATOM: "STATOM", stOSMO: "STOSMO", stLUNA: "STLUNA", stEVMOS: "STEVMOS", rATOM: "RATOM" };
+
+  state = {
+    tokens: this.seed.map(r => ({ symbol: r[0], name: r[1], price: r[2], balance: r[3] })),
+    pay: "ETH",
+    recv: "ATOM",
+    amount: "1",
+    slip: Number(this.props.defaultSlippage ?? 0.5),
+    picker: null,
+    query: "",
+    stage: "idle",
+    invert: false,
+    updated: Date.now(),
+    now: Date.now(),
+    tx: null,
+    done: null,
+    live: false,
+    loading: true,
+    flips: 0,
+    hover: null
+  };
+
+  componentDidMount() {
+    this.timer = setInterval(() => this.setState({ now: Date.now() }), 1000);
+    this.onKey = e => {
+      if (e.key !== "Escape") return;
+      if (this.state.picker) this.setState({ picker: null, query: "" });
+      else if (this.state.stage === "confirm") this.setState({ stage: "idle" });
+    };
+    document.addEventListener("keydown", this.onKey);
+    this.load();
+  }
+
+  load() {
+    this.setState({ loading: true });
+    fetch("https://interview.switcheo.com/prices.json")
+      .then(r => r.json())
+      .then(rows => {
+        const latest = {};
+        rows.forEach(r => {
+          if (!r || !r.price) return;
+          const at = Date.parse(r.date) || 0;
+          if (!latest[r.currency] || at >= latest[r.currency].at) latest[r.currency] = { at, price: r.price };
+        });
+        this.setState(s => ({
+          tokens: s.tokens.map(t => {
+            const hit = latest[this.feedAlias[t.symbol] || t.symbol];
+            return hit ? { ...t, price: hit.price } : t;
+          }),
+          live: true, loading: false, updated: Date.now()
+        }));
+      })
+      .catch(() => this.setState({ loading: false }));
+  }
+  componentWillUnmount() {
+    clearInterval(this.timer);
+    clearTimeout(this.pend);
+    document.removeEventListener("keydown", this.onKey);
+  }
+
+  tk(sym) { return this.state.tokens.find(t => t.symbol === sym); }
+  icon(sym) { return "tokens/" + sym + ".svg"; }
+  iconRef(sym) {
+    return el => { if (el && el.getAttribute("src") !== this.icon(sym)) el.setAttribute("src", this.icon(sym)); };
+  }
+
+  fmt(n) {
+    if (!isFinite(n) || n === 0) return "0";
+    const a = Math.abs(n);
+    const d = a >= 1000 ? 2 : a >= 1 ? 4 : a >= 0.01 ? 6 : 8;
+    return Number(n.toFixed(d)).toLocaleString("en-US", { maximumFractionDigits: d });
+  }
+  usd(n) {
+    if (!isFinite(n)) return "$0.00";
+    if (n !== 0 && Math.abs(n) < 0.01) return "<$0.01";
+    return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  price(n) {
+    if (n >= 1) return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (n >= 0.1) return "$" + n.toFixed(4);
+    return "$" + Number(n.toPrecision(3)).toString();
+  }
+
+  sanitize(raw) {
+    let v = String(raw).replace(/[^0-9.]/g, "");
+    const first = v.indexOf(".");
+    if (first > -1) v = v.slice(0, first + 1) + v.slice(first + 1).replace(/\./g, "");
+    if (v.startsWith(".")) v = "0" + v;
+    if (/^0[0-9]/.test(v)) v = v.replace(/^0+/, "");
+    const dot = v.indexOf(".");
+    if (dot > -1) v = v.slice(0, dot + 9);
+    return v;
+  }
+
+  setAmount(v) { this.setState({ amount: this.sanitize(v) }); }
+
+  flip() {
+    this.setState(s => ({ pay: s.recv, recv: s.pay, amount: "", flips: (s.flips || 0) + 1 }));
+  }
+
+  pick(sym) {
+    this.setState(s => {
+      const which = s.picker;
+      if (!which) return { picker: null, query: "" };
+      const other = which === "pay" ? s.recv : s.pay;
+      if (sym === other) {
+        return { pay: which === "pay" ? sym : s.recv, recv: which === "pay" ? s.pay : sym, picker: null, query: "" };
+      }
+      return which === "pay" ? { pay: sym, picker: null, query: "" } : { recv: sym, picker: null, query: "" };
+    });
+  }
+
+  refresh() { this.load(); }
+
+  confirm() {
+    const q = this.quote();
+    this.setState({ stage: "pending" });
+    this.pend = setTimeout(() => {
+      this.setState(s => ({
+        stage: "done",
+        amount: "",
+        tokens: s.tokens.map(t =>
+          t.symbol === s.pay ? { ...t, balance: t.balance - q.amt }
+          : t.symbol === s.recv ? { ...t, balance: t.balance + q.out }
+          : t),
+        done: { from: this.fmt(q.amt) + " " + s.pay, to: this.fmt(q.out) + " " + s.recv },
+        tx: "0x" + Math.random().toString(16).slice(2, 10) + "…" + Math.random().toString(16).slice(2, 6)
+      }));
+    }, 1500);
+  }
+
+  quote() {
+    const pay = this.tk(this.state.pay), recv = this.tk(this.state.recv);
+    const amt = parseFloat(this.state.amount) || 0;
+    const rate = pay.price / recv.price;
+    const payUsd = amt * pay.price;
+    const impact = Math.min(4.2, (payUsd / 180000) * 100);
+    const out = amt * rate * (1 - impact / 100);
+    return { pay, recv, amt, rate, payUsd, out, impact, outUsd: out * recv.price };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const q = this.quote();
+    const same = s.pay === s.recv;
+    const overBalance = q.amt > q.pay.balance + 1e-12;
+    const tooSmall = q.amt > 0 && q.out < 1e-8;
+
+    let notice = null;
+    if (same) notice = "Choose two different assets to swap.";
+    else if (overBalance) notice = "Insufficient " + q.pay.symbol + " balance — you hold " + this.fmt(q.pay.balance) + " " + q.pay.symbol + ".";
+    else if (tooSmall) notice = "That amount is too small to quote. Try a larger amount.";
+    else if (q.impact > 1.5) notice = "Large order: " + q.impact.toFixed(2) + "% price impact at the current depth.";
+
+    let ctaLabel = "Review swap", ctaDisabled = false;
+    if (same) { ctaLabel = "Select a different asset"; ctaDisabled = true; }
+    else if (q.amt <= 0) { ctaLabel = "Enter an amount"; ctaDisabled = true; }
+    else if (overBalance) { ctaLabel = "Insufficient " + q.pay.symbol + " balance"; ctaDisabled = true; }
+    else if (tooSmall) { ctaLabel = "Amount too small"; ctaDisabled = true; }
+    else if (this.props.requireConfirm === false) ctaLabel = "Swap " + q.pay.symbol + " for " + q.recv.symbol;
+
+    const hasQuote = !same && q.amt > 0 && !tooSmall;
+    const feeUsd = 0.42 + q.payUsd * 0.0009;
+    const min = q.out * (1 - s.slip / 100);
+    const secs = Math.max(0, Math.round((s.now - s.updated) / 1000));
+
+    const holdings = s.tokens
+      .filter(t => t.balance > 0)
+      .map(t => ({ ...t, usdVal: t.balance * t.price }))
+      .sort((a, b) => b.usdVal - a.usdVal)
+      .slice(0, 6)
+      .map(t => ({
+        symbol: t.symbol, mono: t.symbol.slice(0, 1).toUpperCase(), iconRef: this.iconRef(t.symbol),
+        spin: s.hover === "hold:" + t.symbol ? 360 : 0,
+        onEnter: () => this.setState({ hover: "hold:" + t.symbol }),
+        amount: this.fmt(t.balance), usd: this.usd(t.usdVal),
+        onPick: () => this.setState({ pay: t.symbol, recv: s.recv === t.symbol ? s.pay : s.recv })
+      }));
+    const total = s.tokens.reduce((n, t) => n + t.balance * t.price, 0);
+
+    const needle = s.query.trim().toLowerCase();
+    const other = s.picker === "pay" ? s.recv : s.pay;
+    const list = s.tokens
+      .filter(t => t.price > 0)
+      .filter(t => !needle || t.symbol.toLowerCase().includes(needle) || t.name.toLowerCase().includes(needle))
+      .sort((a, b) => (b.balance * b.price) - (a.balance * a.price) || a.symbol.localeCompare(b.symbol))
+      .map(t => ({
+        symbol: t.symbol, name: t.name, mono: t.symbol.slice(0, 1).toUpperCase(), iconRef: this.iconRef(t.symbol),
+        spin: s.hover === "pick:" + t.symbol ? 360 : 0,
+        onEnter: () => this.setState({ hover: "pick:" + t.symbol }),
+        price: this.price(t.price),
+        balance: t.balance > 0 ? this.fmt(t.balance) : "—",
+        ring: t.symbol === other ? "inset 0 0 0 1px var(--color-accent-800)" : "none",
+        disabled: false,
+        onPick: () => this.pick(t.symbol)
+      }));
+
+    const rateText = s.invert
+      ? "1 " + q.recv.symbol + " = " + this.fmt(1 / q.rate) + " " + q.pay.symbol
+      : "1 " + q.pay.symbol + " = " + this.fmt(q.rate) + " " + q.recv.symbol;
+
+    return {
+      amount: s.amount,
+      query: s.query,
+      paySymbol: q.pay.symbol, payMono: q.pay.symbol.slice(0, 1).toUpperCase(), payIconRef: this.iconRef(q.pay.symbol),
+      recvSymbol: q.recv.symbol, recvMono: q.recv.symbol.slice(0, 1).toUpperCase(), recvIconRef: this.iconRef(q.recv.symbol),
+      payBalance: this.fmt(q.pay.balance), recvBalance: this.fmt(q.recv.balance),
+      payUsd: this.usd(q.payUsd), recvUsd: this.usd(q.outUsd),
+      recvAmount: hasQuote ? this.fmt(q.out) : "0.0",
+      recvColor: hasQuote ? "var(--color-text)" : "color-mix(in srgb, var(--color-text) 32%, transparent)",
+      payLine: this.fmt(q.amt) + " " + q.pay.symbol,
+      recvLine: this.fmt(q.out) + " " + q.recv.symbol,
+      notice, hasQuote, ctaLabel, ctaDisabled,
+      flipDeg: s.flips * 180,
+      paySpin: s.hover === "pay" ? 360 : 0,
+      recvSpin: s.hover === "recv" ? 360 : 0,
+      onPayEnter: () => this.setState({ hover: "pay" }),
+      onRecvEnter: () => this.setState({ hover: "recv" }),
+      onHoverOut: () => this.setState({ hover: null }),
+      ratesAnim: s.loading ? "noct-pulse 1.1s ease-in-out infinite" : "none",
+      rateText,
+      minReceived: this.fmt(min) + " " + q.recv.symbol,
+      impactText: (q.impact < 0.01 ? "<0.01" : q.impact.toFixed(2)) + "%",
+      impactColor: q.impact > 1.5 ? "var(--color-accent-300)" : "var(--color-text)",
+      feeText: "≈ " + this.usd(feeUsd),
+      slip01: s.slip === 0.1, slip05: s.slip === 0.5, slip10: s.slip === 1,
+      onSlip01: () => this.setState({ slip: 0.1 }),
+      onSlip05: () => this.setState({ slip: 0.5 }),
+      onSlip10: () => this.setState({ slip: 1 }),
+      updatedLabel: s.loading ? "Loading rates…"
+        : (s.live ? "Live rates" : "Snapshot rates") + (secs < 5 ? " · just updated" : " · " + secs + "s ago"),
+      holdings, portfolioTotal: this.usd(total),
+      pickerOpen: !!s.picker,
+      pickerTitle: s.picker === "pay" ? "Pay with" : "Receive",
+      pickerList: list,
+      noResults: list.length === 0,
+      dialogOpen: s.stage !== "idle",
+      isConfirm: s.stage === "confirm", isPending: s.stage === "pending", isDone: s.stage === "done",
+      doneFrom: s.done ? s.done.from : "", doneTo: s.done ? s.done.to : "", txHash: s.tx || "",
+      onAmount: e => this.setAmount(e.target.value),
+      onQuery: e => this.setState({ query: e.target.value }),
+      onMax: () => this.setAmount(String(q.pay.balance)),
+      onHalf: () => this.setAmount(String(q.pay.balance / 2)),
+      onFlip: () => this.flip(),
+      onOpenPay: () => this.setState({ picker: "pay", query: "" }),
+      onOpenRecv: () => this.setState({ picker: "recv", query: "" }),
+      onClosePicker: () => this.setState({ picker: null, query: "" }),
+      onInvert: () => this.setState({ invert: !s.invert }),
+      onRefresh: () => this.refresh(),
+      onSubmit: () => (this.props.requireConfirm === false ? this.confirm() : this.setState({ stage: "confirm" })),
+      onConfirm: () => this.confirm(),
+      onCancel: () => this.setState({ stage: "idle" })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

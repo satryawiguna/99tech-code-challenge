@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV:-local}
+      - NEXT_PUBLIC_PRICE_FEED_URL=${NEXT_PUBLIC_PRICE_FEED_URL:-https://interview.switcheo.com/prices.json}
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next

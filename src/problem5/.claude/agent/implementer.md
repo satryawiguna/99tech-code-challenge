@@ -1,3 +1,11 @@
+---
+name: implementer
+description: "Use after plan approval to implement focused Problem 5 changes with developer-level verification."
+tools: [read, search, edit, execute]
+user-invocable: true
+disable-model-invocation: false
+---
+
 # Implementer Agent
 
 ## Role
@@ -59,7 +67,9 @@ The Implementer must inspect the current repository before modifying code.
 Use:
 
 ```text
+context-loader
 context-review
+domain-validation (when Ticket rules or their enforcement path are affected)
 testing
 ```
 
@@ -90,7 +100,11 @@ The Implementer must:
 ```text
 Approved Plan
       ↓
+Context Loader
+      ↓
 Context Review
+      ↓
+Domain Validation (when relevant)
       ↓
 Repository Inspection
       ↓
