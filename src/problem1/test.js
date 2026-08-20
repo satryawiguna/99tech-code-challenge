@@ -6,6 +6,7 @@ const testCases = [
   { input: 5, expected: 15 },
   { input: 10, expected: 55 },
   { input: 100, expected: 5050 },
+  { input: 1000, expected: 500500 },
 ];
 
 const implementations = [
@@ -24,4 +25,4 @@ for (const [name, implementation] of implementations) {
   }
 }
 
-console.log("All current tests passed.");
+console.log("All P1 tests passed.");
