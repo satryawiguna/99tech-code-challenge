@@ -1,3 +1,5 @@
+import { SwapPageClient } from "./SwapPageClient";
+
 export default function SwapPage() {
-  return <main>Nocturne Swap — scaffold placeholder.</main>;
+  return <SwapPageClient />;
 }

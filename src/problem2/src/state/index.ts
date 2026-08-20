@@ -14,6 +14,13 @@ export {
 
 export { createQueryClient } from "./queryClient";
 
+export { useCurrentSwapValidation } from "./useCurrentSwapValidation";
+
+export { resolveTokenIconPath, FALLBACK_TOKEN_ICON_PATH } from "./tokenIcon";
+
+export type { PortfolioHolding, PortfolioHoldings } from "./usePortfolioHoldings";
+export { usePortfolioHoldings } from "./usePortfolioHoldings";
+
 export { priceFeedQueryKey } from "./priceFeed/priceFeedQueryKey";
 export { createPriceFeedPort } from "./priceFeed/priceFeedPort";
 export type {

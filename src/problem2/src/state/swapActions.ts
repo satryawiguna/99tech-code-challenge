@@ -14,6 +14,7 @@ import type {
 } from "@/application";
 import { err, findBalanceAmount, invalidReviewSnapshot } from "@/domain";
 import type { DomainError, Result, SwapReviewSnapshot, SwapValidation } from "@/domain";
+import { createTransactionIdSource } from "@/infrastructure";
 import { useSwapStore } from "./swapStore";
 
 /**
@@ -101,10 +102,14 @@ export function prepareReviewAction(): Result<SwapReviewSnapshot, DomainError> {
  * FR-022/FR-023: executes exactly the stored reviewed snapshot — never a
  * value rebuilt from current form state. The synchronous timing here is
  * intentional; simulating a "processing" delay for UX purposes is a
- * Presentation concern for a later phase, not a State responsibility.
+ * Presentation concern (SwapReviewDialog), not a State responsibility.
+ *
+ * `transactionIdSource` defaults to the real Infrastructure source so
+ * Presentation can call this with no arguments; tests may still override it
+ * for a deterministic transaction identifier.
  */
 export function confirmReviewedSwapAction(
-  transactionIdSource: TransactionIdSource,
+  transactionIdSource: TransactionIdSource = createTransactionIdSource(),
 ): Result<ConfirmReviewedSwapResult, DomainError> {
   const state = useSwapStore.getState();
 
