@@ -1,29 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatLastCheckedAge } from "@/shared/utils";
+import { formatDatasetTimestamp } from "@/shared/utils";
 import { Button } from "../atoms/Button";
 
 export interface PriceFreshnessControlProps {
-  /** Umur data sumber (FR-018) — ditampilkan sebagai tooltip, bukan counter utama. */
   readonly datasetTimestamp: number | null;
-  /** Kapan browser terakhir berhasil fetch — clock yang reset tiap refresh sukses. */
-  readonly lastCheckedAt: number | null;
   readonly isRefreshing: boolean;
   readonly onRefresh: () => void;
 }
 
 /**
- * FR-017/FR-018: manual refresh + freshness indicator di header (sesuai desain).
+ * FR-017/FR-018: manual refresh + source-data freshness, positioned in the
+ * header per the design baseline.
  *
- * Baris terlihat adalah last-checked clock ("Updated just now" / "Updated Xs ago")
- * yang tick tiap detik dan reset tiap refresh sukses — sama dengan counter
- * `(now - updated)` di desain. Umur data sumber tetap dipertahankan sebagai
- * tooltip agar FR-018 terpenuhi tanpa mengklaim ini live market stream.
+ * Shows only "Provided price data · Xy ago" — the age of the underlying
+ * price records themselves (domain.md §17). This never resets on refresh: a
+ * static challenge snapshot does not get any newer just because the browser
+ * re-fetched it. A separate resetting "last checked" counter was considered
+ * but dropped — visually collapsing to a single resetting line would read
+ * as "Live rates," which FR-018/AC-015 explicitly forbid.
+ *
+ * Ticks in real time via a 1s clock; never re-fetches or re-derives price
+ * data on its own.
  */
 export function PriceFreshnessControl({
   datasetTimestamp,
-  lastCheckedAt,
   isRefreshing,
   onRefresh,
 }: PriceFreshnessControlProps) {
@@ -33,11 +35,6 @@ export function PriceFreshnessControl({
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  const title =
-    datasetTimestamp === null
-      ? "Provided price data"
-      : `Provided price data · source ${new Date(datasetTimestamp).toISOString()}`;
 
   return (
     <div
@@ -49,7 +46,7 @@ export function PriceFreshnessControl({
         color: "var(--muted-2)",
       }}
     >
-      <span title={title}>{formatLastCheckedAge(lastCheckedAt, now)}</span>
+      <span>{formatDatasetTimestamp(datasetTimestamp, now)}</span>
       <Button
         variant="ghost"
         onClick={onRefresh}

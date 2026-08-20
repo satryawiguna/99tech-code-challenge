@@ -49,6 +49,7 @@ export type { SwapQuote, CalculateQuoteInput } from "./swap/swapQuote";
 export {
   calculateExchangeRate,
   calculateReceiveAmount,
+  calculateAssetUsdValue,
   calculateUsdValues,
   calculateMinimumReceived,
   calculateQuote,

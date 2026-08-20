@@ -11,7 +11,18 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        // Optional escape hatch for machines where `playwright install` can't
+        // fetch the exact managed browser build (e.g. an OS version too old
+        // for the current Playwright release) — point at any already-cached
+        // Chromium-family executable instead. Unset by default everywhere
+        // else, so normal machines/CI keep using Playwright's own managed
+        // browser.
+        launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+          ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+          : {},
+      },
     },
   ],
   webServer: {

@@ -73,15 +73,3 @@ export function formatDatasetTimestamp(timestamp: number | null, now: number = D
   if (timestamp === null) return "Provided price data";
   return `Provided price data · ${formatRelativeAge(now - timestamp)}`;
 }
-
-/**
- * "Updated just now" / "Updated Xs ago" — age of the last successful browser
- * fetch. Resets on each successful refresh (the last-checked clock), distinct
- * from `formatDatasetTimestamp` (the age of the underlying provided records).
- */
-export function formatLastCheckedAge(timestamp: number | null, now: number = Date.now()): string {
-  if (timestamp === null) return "Live rates";
-  const seconds = Math.max(0, Math.round((now - timestamp) / 1000));
-  if (seconds < 5) return "Live rates · just updated";
-  return `Live rates · ${formatRelativeAge(now - timestamp)}`;
-}

@@ -75,7 +75,6 @@ export function SwapTemplate() {
       headerRight={
         <PriceFreshnessControl
           datasetTimestamp={priceState.datasetTimestamp}
-          lastCheckedAt={query.dataUpdatedAt}
           isRefreshing={query.isFetching}
           onRefresh={() => query.refetch()}
         />

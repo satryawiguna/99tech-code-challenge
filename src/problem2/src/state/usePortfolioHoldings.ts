@@ -1,6 +1,6 @@
 "use client";
 
-import { Decimal } from "@/domain";
+import { calculateAssetUsdValue, Decimal } from "@/domain";
 import type { Asset } from "@/domain";
 import { useSwapStore } from "./swapStore";
 
@@ -17,11 +17,10 @@ export interface PortfolioHoldings {
 
 /**
  * Aggregates simulated balances (state) against currently priced assets
- * (price feed) into a portfolio view — a display aggregate, not an approved
- * Domain quote/business rule (no PRD requirement numbers or domain.md
- * invariant govern this specific view). Kept in State rather than
- * Presentation for consistency with this phase's boundary: any computation
- * touching Domain-typed values stays out of React components themselves.
+ * (price feed) into a portfolio view. Per-holding USD value uses Domain's
+ * `calculateAssetUsdValue` (domain.md §5: "calculating USD values" is a
+ * Domain responsibility) — only the aggregation (filtering, sorting,
+ * summing) is State's own.
  */
 export function usePortfolioHoldings(assets: readonly Asset[]): PortfolioHoldings {
   const balances = useSwapStore((state) => state.balances);
@@ -34,7 +33,7 @@ export function usePortfolioHoldings(assets: readonly Asset[]): PortfolioHolding
       return {
         symbol: balance.assetSymbol,
         amount: balance.amount,
-        usdValue: price ? balance.amount.times(price) : new Decimal(0),
+        usdValue: price ? calculateAssetUsdValue(balance.amount, price) : new Decimal(0),
       };
     })
     .sort((a, b) => b.usdValue.comparedTo(a.usdValue));

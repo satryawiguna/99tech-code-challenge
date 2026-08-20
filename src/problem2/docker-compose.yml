@@ -6,8 +6,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - APP_ENV=${APP_ENV:-local}
-      - PRICE_FEED_URL=${PRICE_FEED_URL:-https://interview.switcheo.com/prices.json}
+      - NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV:-local}
+      - NEXT_PUBLIC_PRICE_FEED_URL=${NEXT_PUBLIC_PRICE_FEED_URL:-https://interview.switcheo.com/prices.json}
     volumes:
       - .:/app
       - /app/node_modules

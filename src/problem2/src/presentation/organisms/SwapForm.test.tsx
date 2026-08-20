@@ -234,4 +234,28 @@ describe("SwapForm — asset selector", () => {
       "ATOM",
     );
   });
+
+  it("does not clear the pay side when the same asset is picked for receive before receive was ever set", async () => {
+    const user = userEvent.setup();
+    useSwapStore.setState({ sourceAsset: ETH, destinationAsset: null });
+
+    renderForm();
+    await user.click(screen.getByRole("button", { name: "Choose the asset you receive" }));
+
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: /^ETH/ }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    // Pay must still hold ETH — the "swap sides" shortcut must not fire (and null out
+    // pay) when receive had no prior asset to swap in the first place. Picking the same
+    // asset for both sides is a legitimate same-asset selection, which surfaces Domain's
+    // own SameAssetSwap validation instead.
+    expect(screen.getByRole("button", { name: "Choose the asset you pay with" })).toHaveTextContent(
+      "ETH",
+    );
+    expect(screen.getByRole("button", { name: "Choose the asset you receive" })).toHaveTextContent(
+      "ETH",
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Choose two different assets to swap.");
+  });
 });

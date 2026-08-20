@@ -35,4 +35,24 @@ describe("readAppConfig", () => {
 
     expect(after).toEqual(before);
   });
+
+  it("prefers NEXT_PUBLIC_PRICE_FEED_URL/NEXT_PUBLIC_APP_ENV over the unprefixed names", () => {
+    const config = readAppConfig({
+      APP_ENV: "local",
+      PRICE_FEED_URL: "https://unprefixed.test/prices.json",
+      NEXT_PUBLIC_APP_ENV: "prod",
+      NEXT_PUBLIC_PRICE_FEED_URL: "https://prefixed.test/prices.json",
+    });
+
+    expect(config).toEqual({ appEnv: "prod", priceFeedUrl: "https://prefixed.test/prices.json" });
+  });
+
+  it("falls back to the unprefixed names when NEXT_PUBLIC_ variants are absent", () => {
+    const config = readAppConfig({
+      APP_ENV: "dev",
+      PRICE_FEED_URL: "https://unprefixed.test/prices.json",
+    });
+
+    expect(config).toEqual({ appEnv: "dev", priceFeedUrl: "https://unprefixed.test/prices.json" });
+  });
 });

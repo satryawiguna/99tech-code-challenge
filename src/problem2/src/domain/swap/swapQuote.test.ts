@@ -1,6 +1,7 @@
 import Decimal from "decimal.js";
 import { describe, expect, it } from "vitest";
 import {
+  calculateAssetUsdValue,
   calculateExchangeRate,
   calculateMinimumReceived,
   calculateQuote,
@@ -32,6 +33,25 @@ describe("calculateReceiveAmount", () => {
   it("scales linearly with the source amount", () => {
     const one = calculateReceiveAmount(new Decimal(1), ETH.price, ATOM.price);
     const five = calculateReceiveAmount(new Decimal(5), ETH.price, ATOM.price);
+
+    expect(five.equals(one.times(5))).toBe(true);
+  });
+});
+
+describe("calculateAssetUsdValue", () => {
+  it("computes amount × price", () => {
+    expect(
+      calculateAssetUsdValue(new Decimal(2), ETH.price).equals(new Decimal(2).times(ETH.price)),
+    ).toBe(true);
+  });
+
+  it("returns zero for a zero amount", () => {
+    expect(calculateAssetUsdValue(new Decimal(0), ETH.price).equals(0)).toBe(true);
+  });
+
+  it("scales linearly with amount", () => {
+    const one = calculateAssetUsdValue(new Decimal(1), ATOM.price);
+    const five = calculateAssetUsdValue(new Decimal(5), ATOM.price);
 
     expect(five.equals(one.times(5))).toBe(true);
   });

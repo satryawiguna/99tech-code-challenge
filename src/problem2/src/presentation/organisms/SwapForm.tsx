@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { calculateExchangeRate } from "@/domain";
 import type { Asset } from "@/domain";
 import {
   applyHalfAmountAction,
@@ -68,9 +69,14 @@ export function SwapForm({ assets }: SwapFormProps) {
     const chosenAsset = assets.find((asset) => asset.symbol === symbol);
     if (!chosenAsset || !picker) return;
 
+    const currentAsset = picker === "pay" ? sourceAsset : destinationAsset;
     const otherAsset = picker === "pay" ? destinationAsset : sourceAsset;
-    if (otherAsset && otherAsset.symbol === symbol) {
-      // Picking the asset already on the other side swaps the sides (matches the design baseline).
+    if (currentAsset && otherAsset && otherAsset.symbol === symbol) {
+      // Picking the asset already on the other side swaps the sides (matches the design
+      // baseline) — but only once both sides already hold an asset. If the side being
+      // picked was still empty, there is nothing to swap into the other side; falling
+      // through to the plain assignment below lets a genuine same-asset pick surface
+      // Domain's SameAssetSwap validation instead of silently nulling the other side.
       if (picker === "pay") {
         setSourceAsset(chosenAsset);
         setDestinationAsset(sourceAsset);
@@ -206,7 +212,7 @@ export function SwapForm({ assets }: SwapFormProps) {
                 lineHeight: 1.1,
                 color: quote
                   ? "var(--color-text)"
-                  : "color-mix(in srgb, var(--color-text) 32%, transparent)",
+                  : "color-mix(in srgb, var(--color-text) 40%, transparent)",
               }}
             >
               {quote ? formatTokenAmount(quote.receiveAmount) : "0.0"}
@@ -256,7 +262,7 @@ export function SwapForm({ assets }: SwapFormProps) {
                 onClick={() => setInvertRate((current) => !current)}
               >
                 {invertRate
-                  ? `1 ${quote.destinationAsset.symbol} = ${formatTokenAmount(quote.destinationAsset.price.dividedBy(quote.sourceAsset.price))} ${quote.sourceAsset.symbol}`
+                  ? `1 ${quote.destinationAsset.symbol} = ${formatTokenAmount(calculateExchangeRate(quote.destinationAsset.price, quote.sourceAsset.price))} ${quote.sourceAsset.symbol}`
                   : `1 ${quote.sourceAsset.symbol} = ${formatTokenAmount(quote.exchangeRate)} ${quote.destinationAsset.symbol}`}{" "}
                 <span aria-hidden="true" style={{ opacity: 0.45 }}>
                   ⇄

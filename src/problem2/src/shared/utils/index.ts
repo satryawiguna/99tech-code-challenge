@@ -1,8 +1,2 @@
-export {
-  formatTokenAmount,
-  formatUsd,
-  formatPrice,
-  formatDatasetTimestamp,
-  formatLastCheckedAge,
-} from "./format";
+export { formatTokenAmount, formatUsd, formatPrice, formatDatasetTimestamp } from "./format";
 export { sanitizeAmountInput } from "./sanitizeAmountInput";

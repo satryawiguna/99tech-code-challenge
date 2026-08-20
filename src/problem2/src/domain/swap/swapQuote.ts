@@ -43,6 +43,11 @@ export function calculateReceiveAmount(
   return sourceAmount.times(sourcePrice).dividedBy(destinationPrice);
 }
 
+/** USD value of a single asset amount at a given price (domain.md §5: "calculating USD values"). */
+export function calculateAssetUsdValue(amount: Decimal, price: Decimal): Decimal {
+  return amount.times(price);
+}
+
 export function calculateUsdValues(
   sourceAmount: Decimal,
   sourcePrice: Decimal,
@@ -50,8 +55,8 @@ export function calculateUsdValues(
   destinationPrice: Decimal,
 ): { sourceUsdValue: Decimal; destinationUsdValue: Decimal } {
   return {
-    sourceUsdValue: sourceAmount.times(sourcePrice),
-    destinationUsdValue: receiveAmount.times(destinationPrice),
+    sourceUsdValue: calculateAssetUsdValue(sourceAmount, sourcePrice),
+    destinationUsdValue: calculateAssetUsdValue(receiveAmount, destinationPrice),
   };
 }
 
