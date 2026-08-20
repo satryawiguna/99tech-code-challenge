@@ -1,5 +1,7 @@
 services:
-  app:
+  # Local: dev target, hot reload via bind mount. Config is read live by
+  # `next dev` at runtime — no rebuild needed to pick up an env change.
+  app-local:
     build:
       context: .
       target: dev
@@ -12,3 +14,29 @@ services:
       - .:/app
       - /app/node_modules
       - /app/.next
+
+  # Dev: runner target, the same standalone artifact Prod runs. NEXT_PUBLIC_*
+  # values are inlined by Next.js at build time, so they're passed as build
+  # args here, not runtime `environment:` — changing NEXT_PUBLIC_PRICE_FEED_URL
+  # requires `docker compose build app-dev` (or `up --build`) to take effect;
+  # `docker compose up app-dev` alone reuses the existing image untouched.
+  app-dev:
+    build:
+      context: .
+      target: runner
+      args:
+        NEXT_PUBLIC_APP_ENV: dev
+        NEXT_PUBLIC_PRICE_FEED_URL: ${NEXT_PUBLIC_PRICE_FEED_URL:-https://interview.switcheo.com/prices.json}
+    ports:
+      - "3001:3000"
+
+  # Prod: runner target. Same build-arg caveat as app-dev applies.
+  app-prod:
+    build:
+      context: .
+      target: runner
+      args:
+        NEXT_PUBLIC_APP_ENV: prod
+        NEXT_PUBLIC_PRICE_FEED_URL: ${NEXT_PUBLIC_PRICE_FEED_URL:-https://interview.switcheo.com/prices.json}
+    ports:
+      - "3002:3000"
